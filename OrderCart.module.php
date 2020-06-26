@@ -5,15 +5,9 @@ class OrderCart extends WireData implements Module {
       'title' => 'Order Cart',
       'summary' => 'Provide front end order system for ProcessOrderPages',
       'author' => 'Paul Ashby, primitive.co',
-      'version' => 1
+      'version' => 1,
+      "requires" => "ProcessOrderPages"
     ];
-  }
-  public function __construct() {
-
-    parent::__construct();
-    $this->settings = $this->modules->get("ProcessOrderPages");
-    $this->page_maker = $this->modules->get("PageMaker");
-
   }
   /**
    * Add product to cart (creates a line-item page as child of /processwire/orders/cart-items)
@@ -23,12 +17,13 @@ class OrderCart extends WireData implements Module {
    */
     public function addToCart($item) {
       
+      $settings = $this->modules->getConfig("ProcessOrderPages");
       $sku = $this->sanitizer->text($item->sku);
       $new_quantity = $this->sanitizer->int($item->quantity);
       
       // Is there an existing order for this product?
-      $f_customer = $this->settings["f_customer"];
-      $f_sku_ref = $this->settings["f_sku_ref"];
+      $f_customer = $settings["f_customer"];
+      $f_sku_ref = $settings["f_sku_ref"];
       $user_id = $this->users->getCurrentUser()->id;
       $parent_selector = $this->getCartPath();
       $child_selector = "$f_customer=$user_id,$f_sku_ref=$sku";
@@ -37,21 +32,21 @@ class OrderCart extends WireData implements Module {
       if($exists_in_cart->id) {
         
         // Add to existing item
-        $sum = $new_quantity + $exists_in_cart[$this->settings["f_quantity"]];
+        $sum = $new_quantity + $exists_in_cart[$settings["f_quantity"]];
         $exists_in_cart->of(false);
-        $exists_in_cart->set($this->settings["f_quantity"], $sum);
+        $exists_in_cart->set($settings["f_quantity"], $sum);
         $exists_in_cart->save();
 
       } else { 
 
         // Create a new item
-        $item_title = $sku . ": " . $this->users->get($user_id)[$this->settings["f_display_name"]];
+        $item_title = $sku . ": " . $this->users->get($user_id)[$settings["f_display_name"]];
         $item_data = array("title" => $item_title);
-        $item_data[$this->settings["f_customer"]] = $user_id;
-        $item_data[$this->settings["f_sku_ref"]] = $sku;
-        $item_data[$this->settings["f_quantity"]] = $new_quantity;
+        $item_data[$settings["f_customer"]] = $user_id;
+        $item_data[$settings["f_sku_ref"]] = $sku;
+        $item_data[$settings["f_quantity"]] = $new_quantity;
 
-        $cart_item = $this->wire("pages")->add($this->settings["t_line-item"],  $this->getCartPath(), $item_data);
+        $cart_item = $this->wire("pages")->add($settings["t_line-item"],  $this->getCartPath(), $item_data);
       }
       return json_encode(array("success"=>true));
     }
@@ -64,12 +59,13 @@ class OrderCart extends WireData implements Module {
    */
     public function changeQuantity($sku, $qty) {
 
+      $settings = $this->modules->getConfig("ProcessOrderPages");
       $cart_item = $this->getCartItem($sku);
       $qtys = $this->sanitizer->text($qty);
 
       if($cart_item->id) {
           $cart_item->of(false);
-          $cart_item->set($this->settings["f_quantity"], (int)$qtys);
+          $cart_item->set($settings["f_quantity"], (int)$qtys);
           $cart_item->save();
           return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));  
       }
@@ -98,10 +94,11 @@ class OrderCart extends WireData implements Module {
    */
     protected function getCartItem($sku) {
 
+      $settings = $this->modules->getConfig("ProcessOrderPages");
       $skus = $this->sanitizer->text($sku);
       $user_id = $this->users->getCurrentUser()->id;
-      $f_customer = $this->settings["f_customer"];
-      $f_sku_ref = $this->settings["f_sku_ref"];
+      $f_customer = $settings["f_customer"];
+      $f_sku_ref = $settings["f_sku_ref"];
       $cart_path = $this->getCartPath();
       $parent_selector = "$cart_path, include=all";
       $child_selector = "{$f_customer}={$user_id}, {$f_sku_ref}={$skus}, include=all";
@@ -118,9 +115,11 @@ class OrderCart extends WireData implements Module {
    * @return wireArray The cart items
    */
     protected function getCartItems() {
+
+      $settings = $this->modules->getConfig("ProcessOrderPages");
       $user_id = $this->users->getCurrentUser()->id;
-      $t_line_item = $this->settings["t_line-item"];
-      $f_customer = $this->settings["f_customer"];
+      $t_line_item = $settings["t_line-item"];
+      $f_customer = $settings["f_customer"];
       return $this->pages->findOne($this->getCartPath() . ", include=all")->children("template={$t_line_item}, {$f_customer}={$user_id}, include=all");
     }
   /**
@@ -128,8 +127,9 @@ class OrderCart extends WireData implements Module {
    *
    * @return string
    */
-    public function getCartPath() {
-      return $this->settings["order_root"] . "/cart-items/";
+    protected function getCartPath() {
+      $settings = $this->modules->getConfig("ProcessOrderPages");
+      return $settings["order_root"] . "/cart-items/";
     }
   /**
    * Process line items, creating new order in /processwire/orders/pending-orders/
@@ -138,35 +138,37 @@ class OrderCart extends WireData implements Module {
    */
     public function placeOrder() {
 
-      // Get the parent page for the new order
-      $errors = array();
+    // Get the parent page for the new order
+    $errors = array();
 
-      $orders_parent = $this->getOrdersPage("pending", $this->users->getCurrentUser()->id);
-      
-      if($orders_parent) {
+    $orders_parent = $this->getOrdersPage("pending", $this->users->getCurrentUser()->id);
+    $page_maker = $this->modules->get("PageMaker");
+    
+    if($orders_parent) {
 
-        $order_number = $this->getOrderNum();
-        $spec = array(
-          "template" => $this->settings["t_order"], 
-          "parent"=>$orders_parent->path(), 
-          "title"=>$order_number,
-          "name"=>$order_number
-        );
+      $settings = $this->modules->getConfig("ProcessOrderPages");
+      $order_number = $this->getOrderNum();
+      $spec = array(
+        "template" => $settings["t_order"], 
+        "parent"=>$orders_parent->path(), 
+        "title"=>$order_number,
+        "name"=>$order_number
+      );
 
-        // Create the order
-        $order_page = $this->page_maker->makePage($spec);
-        $cart_items = $this->getCartItems();
+      // Create the order
+      $order_page = $page_maker->makePage($spec);
+      $cart_items = $this->getCartItems();
 
-        foreach ($cart_items as $item) {
-          $item->of(false);
-          $item->parent = $order_page;
-          $item->save();
-        }
-        return json_encode(array("success"=>true));
+      foreach ($cart_items as $item) {
+        $item->of(false);
+        $item->parent = $order_page;
+        $item->save();
       }
-      $errors[] = "The orders page could not be found";
-      return json_encode(array("errors"=>$errors));
+      return json_encode(array("success"=>true));
     }
+    $errors[] = "The orders page could not be found";
+    return json_encode(array("errors"=>$errors));
+  }
   /**
    * Move order to next step to reflect new status
    *
@@ -175,12 +177,14 @@ class OrderCart extends WireData implements Module {
    * @return boolean
    */
     public function progressOrder($order_num, $order_step) {
-      $order_selector = "template=" . $this->settings["t_order"] . ",name={$order_num}";
+
+      $settings = $this->modules->getConfig("ProcessOrderPages");
+      $order_selector = "template=" . $settings["t_order"] . ",name={$order_num}";
       $order_pg = $this->pages->findOne($order_selector);
       
       if($order_pg->id){
         // Get the customer
-        $customer = $order_pg->children()->first()[$this->settings["f_customer"]];
+        $customer = $order_pg->children()->first()[$settings["f_customer"]];
         $next_step = $this->getOrdersPage($order_step, $customer);
         $order_pg->of(false);
         $order_pg->parent = $next_step;
@@ -198,7 +202,8 @@ class OrderCart extends WireData implements Module {
    */
     public function getOrdersPage($order_step, $user_id = null) {
       
-      $parent_path = $this->settings["order_root"] . "/{$order_step}-orders/";
+      $settings = $this->modules->getConfig("ProcessOrderPages");
+      $parent_path = $settings["order_root"] . "/{$order_step}-orders/";
       $parent_selector = "$parent_path,include=all"; 
       $order_parent_name =  "{$user_id}_orders";
       if($user_id) {
@@ -207,21 +212,22 @@ class OrderCart extends WireData implements Module {
         $user_order_page = $this->pages->get($parent_selector)->child($child_selector);
         if($user_order_page->id) {
           return $user_order_page;
-        }
-        $order_template = $this->settings["t_user-orders"];
-        $spec = array(
-          "template" => $order_template, 
-          "parent"=>$parent_path, 
-          "title"=>$order_parent_name, 
-          "name"=> $order_parent_name
-        );
-
-        // No orders for this user - make a new page within pending orders
-        return $this->page_maker->makePage($spec);
       }
-      // All orders for given step
-      return $this->pages->get($parent_path)->children();
+      $order_template = $settings["t_user-orders"];
+      $spec = array(
+        "template" => $order_template, 
+        "parent"=>$parent_path, 
+        "title"=>$order_parent_name, 
+        "name"=> $order_parent_name
+      );
+
+      // No orders for this user - make a new page within pending orders
+      $page_maker = $this->modules->get("PageMaker");
+      return $page_maker->makePage($spec);
     }
+    // All orders for given step
+    return $this->pages->get($parent_path)->children();
+  }
   /**
    * Get order number then increment in db
    *
@@ -282,9 +288,10 @@ class OrderCart extends WireData implements Module {
     public function renderCart($omitContainer = false) {
 
       // Store field and template names in variables for markup
-      $f_sku = $this->settings["f_sku"];
-      $f_sku_ref = $this->settings["f_sku_ref"];
-      $f_quantity = $this->settings["f_quantity"];
+      $settings = $this->modules->getConfig("ProcessOrderPages");
+      $f_sku = $settings["f_sku"];
+      $f_sku_ref = $settings["f_sku_ref"];
+      $f_quantity = $settings["f_quantity"];
       $open = $omitContainer ? "" : "<div class='cart-items'>";
       $close = $omitContainer ? "" : "</div>";
 
@@ -320,4 +327,4 @@ class OrderCart extends WireData implements Module {
 
       return $render;
     }
-  }
+}
