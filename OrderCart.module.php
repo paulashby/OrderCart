@@ -45,7 +45,7 @@ class OrderCart extends WireData implements Module {
         $item_data[$settings["f_sku_ref"]] = $sku;
         $item_data[$settings["f_quantity"]] = $new_quantity;
 
-        $cart_item = $this->wire("pages")->add($settings["t_line-item"],  $this->getCartPath(), $item_data);
+        $cart_item = $this->wire("pages")->add($settings["t_line_item"],  $this->getCartPath(), $item_data);
       }
       return json_encode(array("success"=>true));
     }
@@ -117,7 +117,7 @@ class OrderCart extends WireData implements Module {
 
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $user_id = $this->users->getCurrentUser()->id;
-      $t_line_item = $settings["t_line-item"];
+      $t_line_item = $settings["t_line_item"];
       $f_customer = $settings["f_customer"];
       return $this->pages->findOne($this->getCartPath() . ", include=all")->children("template={$t_line_item}, {$f_customer}={$user_id}, include=all");
     }
@@ -212,7 +212,7 @@ class OrderCart extends WireData implements Module {
         if($user_order_page->id) {
           return $user_order_page;
       }
-      $order_template = $settings["t_user-orders"];
+      $order_template = $settings["t_user_orders"];
       $spec = array(
         "template" => $order_template, 
         "parent"=>$parent_path, 
