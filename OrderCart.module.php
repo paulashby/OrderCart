@@ -21,7 +21,6 @@ class OrderCart extends WireData implements Module {
       $sku = $this->sanitizer->text($item->sku);
       $new_quantity = $this->sanitizer->int($item->quantity);
       
-      // Is there an existing order for this product?
       $f_customer = $settings["f_customer"];
       $f_sku_ref = $settings["f_sku_ref"];
       $user_id = $this->users->getCurrentUser()->id;
@@ -30,8 +29,8 @@ class OrderCart extends WireData implements Module {
       $exists_in_cart = $this->pages->get($parent_selector)->child($child_selector);
 
       if($exists_in_cart->id) {
-        
-        // Add to existing item
+
+        // Add to exisitng line item if user already has this product in their cart
         $sum = $new_quantity + $exists_in_cart[$settings["f_quantity"]];
         $exists_in_cart->of(false);
         $exists_in_cart->set($settings["f_quantity"], $sum);
