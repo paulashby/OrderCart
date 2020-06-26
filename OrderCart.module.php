@@ -224,6 +224,7 @@ class OrderCart extends WireData implements Module {
       $page_maker = $this->modules->get("PageMaker");
       return $page_maker->makePage($spec);
     }
+
     // All orders for given step
     return $this->pages->get($parent_path)->children();
   }
