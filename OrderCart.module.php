@@ -78,9 +78,10 @@ class OrderCart extends WireData implements Module {
    */
     public function removeCartItem($sku) {
       $cart_item = $this->getCartItem($sku);
+      
       if($cart_item->id) {
-        
         $cart_item->delete(true);
+
         return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));  
       }
       return json_encode(array("error"=>"The item could not be found"));
@@ -287,12 +288,16 @@ class OrderCart extends WireData implements Module {
    */
     public function renderCart($omitContainer = false) {
 
+      // Including link to js with async defer tag, but not doing the same for jQuery - see
+      // https://stackoverflow.com/questions/436411/where-should-i-put-script-tags-in-html-markup
+      // See id="comment-51651237" 
+
       // Store field and template names in variables for markup
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $f_sku = $settings["f_sku"];
       $f_sku_ref = $settings["f_sku_ref"];
       $f_quantity = $settings["f_quantity"];
-      $open = $omitContainer ? "" : "<div class='cart-items'>";
+      $open = $omitContainer ? "" : "<div class='cart-items'><script src='" . $this->config->urls->site . "modules/OrderCart/cart.js' async defer></script>";
       $close = $omitContainer ? "" : "</div>";
 
       $cart_items = $this->getCartItems();
