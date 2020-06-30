@@ -5,19 +5,18 @@ var Cart = (function () {
     var setup = {
 	    success_callbacks : {
 	        submit: function (e, data) {
-	        	//TODO: Provide success feedback
+	        	//TODO: Provide success feedback?
 	        },
 	        qtychange: function (e, data) {
 	        	// Update the cart
-	        	debugger;
 	        	var cart_form = document.getElementsByClassName('cart-items__form');
-	        	cart_form.parentNode.replaceChild(data.cart, cart_form);
+	        	cart_form[0].outerHTML = data.cart;
 
 	        },
 	        remove: function (e, data) {
 	        	// Update the cart
 	        	var cart_form = document.getElementsByClassName('cart-items__form');
-	        	cart_form.parentNode.replaceChild(data.cart, cart_form);
+	        	cart_form[0].outerHTML = data.cart;
 	        }
 	    }
 	};
