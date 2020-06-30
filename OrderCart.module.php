@@ -9,6 +9,7 @@ class OrderCart extends WireData implements Module {
       "requires" => "ProcessOrderPages"
     ];
   }
+
   /**
    * Add product to cart (creates a line-item page as child of /processwire/orders/cart-items)
    *
@@ -57,7 +58,7 @@ class OrderCart extends WireData implements Module {
    * @return Json Updated cart markup if successful
    */
     public function changeQuantity($sku, $qty) {
-
+      bd("changeQuantity method sees $sku and $qty");
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $cart_item = $this->getCartItem($sku);
       $qtys = $this->sanitizer->text($qty);
@@ -166,6 +167,7 @@ class OrderCart extends WireData implements Module {
       }
       return json_encode(array("success"=>true));
     }
+    
     $errors[] = "The orders page could not be found";
     return json_encode(array("errors"=>$errors));
   }
@@ -326,7 +328,7 @@ class OrderCart extends WireData implements Module {
           <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove' data-sku='{$sku_ref}'>
           </fieldset>";
       }
-      $render .= "<input class='form__button form__button--submit' type='submit' name='submit' value='submit'>
+      $render .= "<input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order'>
         </form>";
       $render .= $close;
 
