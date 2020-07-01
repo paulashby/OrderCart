@@ -109,8 +109,8 @@ class OrderCart extends WireData implements Module {
       $f_customer = $settings["f_customer"];
       $f_sku_ref = $settings["f_sku_ref"];
       $cart_path = $this->getCartPath();
-      $parent_selector = "$cart_path, include=all";
-      $child_selector = "{$f_customer}={$user_id}, {$f_sku_ref}={$skus}, include=all";
+      $parent_selector = $cart_path;
+      $child_selector = "{$f_customer}={$user_id}, {$f_sku_ref}={$skus}";
       $cart_item = $this->pages->findOne($parent_selector)->child($child_selector);
 
       if($cart_item->id) {
@@ -129,7 +129,7 @@ class OrderCart extends WireData implements Module {
       $user_id = $this->users->getCurrentUser()->id;
       $t_line_item = $settings["t_line_item"];
       $f_customer = $settings["f_customer"];
-      return $this->pages->findOne($this->getCartPath() . ", include=all")->children("template={$t_line_item}, {$f_customer}={$user_id}, include=all");
+      return $this->pages->findOne($this->getCartPath())->children("template={$t_line_item}, {$f_customer}={$user_id}");
     }
   /**
    * Get the path of the cart
@@ -217,12 +217,11 @@ class OrderCart extends WireData implements Module {
 
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $parent_path = $settings["order_root"] . "/{$order_step}-orders/";
-      $parent_selector = "$parent_path,include=all"; 
       $order_parent_name =  "{$user_id}_orders";
       if($user_id) {
         // User provided, so get the orders page just for this customer
-        $child_selector = "name=$order_parent_name,include=all";
-        $user_order_page = $this->pages->get($parent_selector)->child($child_selector);
+        $child_selector = "name=$order_parent_name";
+        $user_order_page = $this->pages->get($parent_path)->child($child_selector);
         if($user_order_page->id) {
           return $user_order_page;
       }
