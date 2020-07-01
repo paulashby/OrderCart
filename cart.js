@@ -6,6 +6,10 @@ var Cart = (function () {
 	    success_callbacks : {
 	        add: function (e, data) {
 	        	//TODO: Provide success feedback - need this for when return is hit after changing quantity
+	        	var cart_items = document.getElementsByClassName('cart-items');
+	        	if(cart_items) {
+	        		cart_items[0].innerHTML = data.cart;
+	        	}
 	        },
 	        remove: function (e, data) {
 	        	// Update the cart
@@ -52,12 +56,13 @@ var Cart = (function () {
 
 	    actions.add = function (e) {
 
-	    	var options = {
+	    		var id = e.target.dataset.context + e.target.dataset.sku;
+	    		var options = {
 	        	ajaxdata: {
             		action: 'add',
             		params: {
             			sku: e.target.dataset.sku,
-            			qty: document.getElementById(e.target.dataset.sku).value
+            			qty: document.getElementById(id).value
             		}
             	},
             	role: 'add', // Set this to run callback
@@ -85,13 +90,14 @@ var Cart = (function () {
 
 	    actions.update = function (e) {
 	    	
+	    	var id = e.target.dataset.context + e.target.dataset.sku;
 	    	var options = {
             	ajaxdata: {
             		action: 'update',
             		params: {
             			//TODO: Need to do the back end for this - might be as simple as using changeQuantity with cart context
             			sku: e.target.dataset.sku,
-            			qty: document.getElementById(e.target.dataset.sku).value
+            			qty: document.getElementById(id).value
             		}
             	},  
             	role: 'update', // Set this to run callback
@@ -135,6 +141,7 @@ var Cart = (function () {
 
 		    	if(response.error) {
 		    		//TODO: Does this need handling?
+		    		console.warn('Ajax call returned an error');
 		    	} else {
 		    		// Route to appropriate callback
 		    		setup.success_callbacks[options.role](options.event, response);

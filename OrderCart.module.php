@@ -1,4 +1,5 @@
 <?php namespace ProcessWire;
+
 class OrderCart extends WireData implements Module {
   public static function getModuleInfo() {
     return [
@@ -51,7 +52,7 @@ class OrderCart extends WireData implements Module {
         $cart_item = $this->wire("pages")->add($settings["t_line_item"],  $this->getCartPath(), $item_data);
       }
 
-      return json_encode(array("success"=>true));
+      return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));
     }
   /**
    * Change quantity of cart item
@@ -61,7 +62,6 @@ class OrderCart extends WireData implements Module {
    * @return Json Updated cart markup if successful
    */
     public function changeQuantity($sku, $qty) {
-      
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $cart_item = $this->getCartItem($sku);
       $qtys = $this->sanitizer->text($qty);
@@ -303,6 +303,7 @@ class OrderCart extends WireData implements Module {
 
       $context = $options["context"];
       $sku = $options["sku"];
+      $id = $context . $sku;
 
       if($context === "listing") {
         $name = "quantity";
@@ -312,7 +313,7 @@ class OrderCart extends WireData implements Module {
         $value = $options["quantity"];
       }
 
-      return "<input id='$sku' class='.form__quantity' type='number' data-context='$context' data-action='qtychange' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
+      return "<input id='$id' class='.form__quantity' type='number' data-context='$context' data-action='qtychange' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
     }
   /**
    * Generate HTML markup for product listing form
@@ -322,9 +323,12 @@ class OrderCart extends WireData implements Module {
    */
     protected function renderItem($product) {
 
+      $settings = $this->modules->get("ProcessOrderPages");
+
       $title = $product->title;
       $sku = $product->sku;
-      $price = $product->price;
+      $price = $settings->getPrice($product);
+
       $qty_field_options = array(
         "context"=>"listing",  
         "sku"=>$sku,
@@ -336,7 +340,7 @@ class OrderCart extends WireData implements Module {
       $render .= $this->renderQuantityField($qty_field_options);
       $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
       <input type='hidden' id='price' name='price' value='$price'>
-      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-sku='$sku' data-action='add'> 
+      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-context='listing' data-sku='$sku' data-action='add'> 
       </form>";
       return $render;
     }
@@ -353,7 +357,7 @@ class OrderCart extends WireData implements Module {
       // See id="comment-51651237" 
 
       // Store field and template names in variables for markup
-      $settings = $this->modules->getConfig("ProcessOrderPages");
+      $settings = $this->modules->get("ProcessOrderPages");
 
       $f_sku = $settings["f_sku"];
       $f_sku_ref = $settings["f_sku_ref"];
@@ -374,7 +378,7 @@ class OrderCart extends WireData implements Module {
         $product_selector = "template=product, {$f_sku}={$sku_ref}";
         $product = $this->pages->findOne($product_selector);
         $title = $product->title;
-        $price = $product->price;
+        $price = $settings->getPrice($product);
         $r_price = $this->renderPrice($price);
         $quantity = $data[$f_quantity];
         $subtotal = $this->renderPrice($price * $quantity);
@@ -393,8 +397,8 @@ class OrderCart extends WireData implements Module {
           $render .= "<p class='form__price'>Pack price: $r_price</p>
           <p class='form__price--subtotal'>Subtotal: $subtotal</p>
           <input type='hidden' name='sku[]' value='{$sku_ref}'>
-          <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove' data-sku='{$sku_ref}'>
-          <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-sku='{$sku_ref}'>
+          <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove' data-context='cart' data-sku='{$sku_ref}'>
+          <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-context='cart' data-sku='{$sku_ref}'>
           </fieldset>";
       }
       $render .= "</form>";
