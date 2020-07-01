@@ -4,19 +4,23 @@ var Cart = (function () {
 
     var setup = {
 	    success_callbacks : {
-	        submit: function (e, data) {
-	        	//TODO: Provide success feedback?
-	        },
-	        qtychange: function (e, data) {
-	        	// Update the cart
-	        	var cart_form = document.getElementsByClassName('cart-items__form');
-	        	cart_form[0].outerHTML = data.cart;
-
+	        add: function (e, data) {
+	        	//TODO: Provide success feedback - need this for when return is hit after changing quantity
 	        },
 	        remove: function (e, data) {
 	        	// Update the cart
+	        	var cart_items = document.getElementsByClassName('cart-items')[0];
+	        	cart_items.innerHTML = data.cart;
+	        },
+	        update: function (e, data) {
+	        	// Update the cart
+	        	var cart_items = document.getElementsByClassName('cart-items')[0];
+	        	cart_items.innerHTML = data.cart;
+	        },
+	        order: function (e, data) {
+	        	//TODO: Provide success feedback?
 	        	var cart_form = document.getElementsByClassName('cart-items__form');
-	        	cart_form[0].outerHTML = data.cart;
+	        	cart_form[0].innerHTML = '<h3>' + data.message + '</h3>';
 	        }
 	    }
 	};
@@ -35,75 +39,29 @@ var Cart = (function () {
 
 	function onDOMloaded () {
 
-		// Polyfill closest() for IE
-		if (!Element.prototype.matches) {
-			Element.prototype.matches = Element.prototype.msMatchesSelector || 
-		                              Element.prototype.webkitMatchesSelector;
-		}
-
-		if (!Element.prototype.closest) {
-		  Element.prototype.closest = function(s) {
-		    var el = this;
-
-		    do {
-		      if (Element.prototype.matches.call(el, s)) return el;
-		      el = el.parentElement || el.parentNode;
-		    } while (el !== null && el.nodeType === 1);
-		    return null;
-		  };
-		}
-
-		// Store for validateOnBlur() which is also called by actions.cancel() 
+		// Do we need to store something for validateOnBlur() which is also called by actions.cancel()? 
 		// Use event handlers in actions object
 
-	    document.addEventListener('click', function (e) {
-
-	    	dataAttrClickHandler(e, actions);
-
+	    document.addEventListener('click', function (e) { 
+	    	dataAttrEventHandler(e, actions); 
+	    }, false);
+	    document.addEventListener('change', function (e) { 
+	    	dataAttrEventHandler(e, actions); 
 	    }, false);
 
-	    actions.submit = function (e) {
+	    actions.add = function (e) {
 
-	    	var submitting_form = e.target.closest('form');
 	    	var options = {
-	        	// Do we need to serialize? The historic ajax problem was caused by $config->appendTemplateFile = 'includes/_main.php'
-	        	// We're actually composing a string for this, so don't need to serialize!
-	        	// ajaxdata: serialize(submitting_form), // Should contain 'submit' 
 	        	ajaxdata: {
-            		action: 'submit',
-            		// params: serialize(submitting_form)
-					/*
-            		{
-            			sku: submitting_form.getElementsByClassName('form__sku')[0].value,
-		    			qty: submitting_form.getElementsByClassName('form__quantity')[0].value,
-            			price: submitting_form.getElementsByClassName('form__price')[0].value
-
-            		}
-            		*/
-            	},
-            	role: 'submit', // Set this to run callback
-            	event: e // Possible needed for callbacks
-	        };
-	        doAction(options);
-	        e.preventDefault();
-	    };
-
-	    actions.qtychange = function (e) {
-
-	    	// This should be excluded with event.preventDefault - we need another eventHandler for onChange
-	    	// https://www.w3schools.com/jsref/event_onchange.asp
-			var options = {
-            	ajaxdata: {
-            		action: 'qtychange',
+            		action: 'add',
             		params: {
-            			sku: e.target.dataset.sku, 
-            			qty: e.target.value
+            			sku: e.target.dataset.sku,
+            			qty: document.getElementById(e.target.dataset.sku).value
             		}
-            	},  
-            	role: 'qtychange', // Set this to run callback
+            	},
+            	role: 'add', // Set this to run callback
             	event: e // Possible needed for callbacks
 	        };
-
 	        doAction(options);
 	        e.preventDefault();
 	    };
@@ -118,6 +76,24 @@ var Cart = (function () {
             		}
             	},  
             	role: 'remove', // Set this to run callback
+            	event: e // Possibly needed for callbacks
+	        };
+	        doAction(options);
+	        e.preventDefault();
+	    }	    
+
+	    actions.update = function (e) {
+	    	
+	    	var options = {
+            	ajaxdata: {
+            		action: 'update',
+            		params: {
+            			//TODO: Need to do the back end for this - might be as simple as using changeQuantity with cart context
+            			sku: e.target.dataset.sku,
+            			qty: document.getElementById(e.target.dataset.sku).value
+            		}
+            	},  
+            	role: 'update', // Set this to run callback
             	event: e // Possibly needed for callbacks
 	        };
 	        doAction(options);
@@ -138,7 +114,7 @@ var Cart = (function () {
 	    }
 	};
 
-	function dataAttrClickHandler (e, actions) {
+	function dataAttrEventHandler (e, actions) {
 
 	    var action = e.target.dataset.action;
 
@@ -154,8 +130,14 @@ var Cart = (function () {
 		    if (this.readyState == 4 && this.status == 200) {
 		    	xhttp.getAllResponseHeaders();
 		    	
-		    	// Different callbacks will probably require different arguments
-		    	setup.success_callbacks[options.role](options.event, JSON.parse(this.response));
+		    	var response = JSON.parse(this.response);
+
+		    	if(response.error) {
+		    		//TODO: Does this need handling?
+		    	} else {
+		    		// Route to appropriate callback
+		    		setup.success_callbacks[options.role](options.event, response);
+		    	}
 		    }
 		};
 		xhttp.open("PUT", "", true);
