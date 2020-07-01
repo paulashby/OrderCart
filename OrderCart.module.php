@@ -13,20 +13,21 @@ class OrderCart extends WireData implements Module {
   /**
    * Add product to cart (creates a line-item page as child of /processwire/orders/cart-items)
    *
-   * @param string $item The submitted form
+   * @param string $sku The product code
+   * @param string $quantity 
    * @return string The configured field name
    */
-    public function addToCart($item) {
+    public function addToCart($sku, $quantity) {
       
       $settings = $this->modules->getConfig("ProcessOrderPages");
-      $sku = $this->sanitizer->text($item->sku);
-      $new_quantity = $this->sanitizer->int($item->quantity);
+      $skus = $this->sanitizer->text($sku);
+      $new_quantity = $this->sanitizer->int((int)$quantity);
       
       $f_customer = $settings["f_customer"];
       $f_sku_ref = $settings["f_sku_ref"];
       $user_id = $this->users->getCurrentUser()->id;
       $parent_selector = $this->getCartPath();
-      $child_selector = "$f_customer=$user_id,$f_sku_ref=$sku";
+      $child_selector = "$f_customer=$user_id,$f_sku_ref=$skus";
       $exists_in_cart = $this->pages->get($parent_selector)->child($child_selector);
 
       if($exists_in_cart->id) {
@@ -48,6 +49,7 @@ class OrderCart extends WireData implements Module {
 
         $cart_item = $this->wire("pages")->add($settings["t_line_item"],  $this->getCartPath(), $item_data);
       }
+
       return json_encode(array("success"=>true));
     }
   /**
@@ -58,17 +60,22 @@ class OrderCart extends WireData implements Module {
    * @return Json Updated cart markup if successful
    */
     public function changeQuantity($sku, $qty) {
-      bd("changeQuantity method sees $sku and $qty");
+      
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $cart_item = $this->getCartItem($sku);
       $qtys = $this->sanitizer->text($qty);
 
-      if($cart_item->id) {
-          $cart_item->of(false);
-          $cart_item->set($settings["f_quantity"], (int)$qtys);
-          $cart_item->save();
-          return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));  
+      if($cart_item) { // getCartItem returns false if the item cannot be found
+
+        // Update product
+        $cart_item->of(false);
+        $cart_item->set($settings["f_quantity"], (int)$qtys);
+        $cart_item->save();
+
+        // Return entire form to cart
+        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));
       }
+
       return json_encode(array("error"=>"The item could not be found"));
     }
     /**
@@ -129,6 +136,7 @@ class OrderCart extends WireData implements Module {
    * @return string
    */
     protected function getCartPath() {
+
       $settings = $this->modules->getConfig("ProcessOrderPages");
       return $settings["order_root"] . "/cart-items/";
     }
@@ -145,7 +153,7 @@ class OrderCart extends WireData implements Module {
     $orders_parent = $this->getOrdersPage("pending", $this->users->getCurrentUser()->id);
     $page_maker = $this->modules->get("PageMaker");
     
-    if($orders_parent) {
+    if($orders_parent->id) {
 
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $order_number = $this->getOrderNum();
@@ -165,9 +173,11 @@ class OrderCart extends WireData implements Module {
         $item->parent = $order_page;
         $item->save();
       }
-      return json_encode(array("success"=>true));
+      $order_message = $this->order_message;
+
+      return json_encode(array("success"=>true, "message"=>"<h3>$order_message</h3>"));  
     }
-    
+
     $errors[] = "The orders page could not be found";
     return json_encode(array("errors"=>$errors));
   }
@@ -282,6 +292,53 @@ class OrderCart extends WireData implements Module {
 
       return $this["o_csign"] . number_format($pence/100, 2);
     }
+/**
+ * Generate HTML markup for quantity number input field
+ *
+ * @param Array $options [String "context", String "sku"]
+ * @return String HTML markup
+ */
+    protected function renderQuantityField($options) {
+
+      $context = $options["context"];
+      $sku = $options["sku"];
+
+      if($context === "listing") {
+        $name = "quantity";
+        $value = "1";
+      } else {
+        $name = "quantity[]";
+        $value = $options["quantity"];
+      }
+
+      return "<input id='$sku' class='.form__quantity' type='number' data-context='$context' data-action='qtychange' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
+    }
+  /**
+   * Generate HTML markup for product listing form
+   *
+   * @param Page $product The product item
+   * @return string HTML markup
+   */
+    protected function renderItem($product) {
+
+      $title = $product->title;
+      $sku = $product->sku;
+      $price = $product->price;
+      $qty_field_options = array(
+        "context"=>"listing",  
+        "sku"=>$sku,
+      );
+      
+      $render = "<form action='' method='post'>
+      <h2>$title</h2>
+      <label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
+      $render .= $this->renderQuantityField($qty_field_options);
+      $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
+      <input type='hidden' id='price' name='price' value='$price'>
+      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-sku='$sku' data-action='add'> 
+      </form>";
+      return $render;
+    }
   /**
    * Generate HTML markup for current user's cart
    *
@@ -296,40 +353,61 @@ class OrderCart extends WireData implements Module {
 
       // Store field and template names in variables for markup
       $settings = $this->modules->getConfig("ProcessOrderPages");
+
       $f_sku = $settings["f_sku"];
       $f_sku_ref = $settings["f_sku_ref"];
       $f_quantity = $settings["f_quantity"];
-      $open = $omitContainer ? "" : "<div class='cart-items'><script src='" . $this->config->urls->site . "modules/OrderCart/cart.js' async defer></script>";
+      $open = $omitContainer ? "" : "<div class='cart-items'><script src='" . $this->config->urls->site . "modules/OrderCart/cart.js'></script>";
       $close = $omitContainer ? "" : "</div>";
 
       $cart_items = $this->getCartItems();
 
       $render = $open;
-      $render .= "<form class='cart-items__form' action='' method='post'>";
+      $render .= "<div class='cart-forms'><form class='cart-items__form' action='' method='post'>";
+
       // cart_items are line_items NOT product pages
       foreach ($cart_items as $item => $data) {
+
         $sku_ref = $data[$f_sku_ref];
         $sku_uc = strtoupper($sku_ref);
         $product_selector = "template=product, {$f_sku}={$sku_ref}";
         $product = $this->pages->findOne($product_selector);
-        $price = $this->renderPrice($product->price);
+        $title = $product->title;
+        $price = $product->price;
+        $r_price = $this->renderPrice($price);
         $quantity = $data[$f_quantity];
-        $subtotal = $this->renderPrice($product->price * $quantity);
+        $subtotal = $this->renderPrice($price * $quantity);
+        $qty_field_options = array(
+          "context"=>"cart", 
+          "sku"=>$sku_ref,
+          "quantity"=>$quantity
+        );
 
         $render .= "<fieldset class='form__fieldset'>
-        <legend>" . $product->title . "</legend>";
+        <legend>$title</legend>";
         
         $render .= "<p>SKU: {$sku_uc}</p>
-          <label class='form__label' for='quantity'>Quantity (Packs of 6):</label>
-          <input class='form__quantity' type='number' data-action='qtychange' data-sku='{$sku_ref}' name='quantity[]' min='1' step='1' value='{$quantity}'>
-          <p class='form__price'>Pack price: $price</p>
+          <label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
+          $render .= $this->renderQuantityField($qty_field_options);
+          $render .= "<p class='form__price'>Pack price: $r_price</p>
           <p class='form__price--subtotal'>Subtotal: $subtotal</p>
           <input type='hidden' name='sku[]' value='{$sku_ref}'>
           <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove' data-sku='{$sku_ref}'>
+          <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-sku='{$sku_ref}'>
           </fieldset>";
       }
-      $render .= "<input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order'>
-        </form>";
+      $render .= "</form>";
+
+      if(count($cart_items)){
+
+        $render .= "<form class='cart-items__form' action='' method='post'>
+      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order'>
+        </form>
+        </div>";
+      } else {
+        $render .= "<h3>There are currently no items in the cart</h3>";
+      }
+
       $render .= $close;
 
       return $render;
