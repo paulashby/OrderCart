@@ -28,6 +28,7 @@ class OrderCart extends WireData implements Module {
       $user_id = $this->users->getCurrentUser()->id;
       $parent_selector = $this->getCartPath();
       $child_selector = "$f_customer=$user_id,$f_sku_ref=$skus";
+
       $exists_in_cart = $this->pages->get($parent_selector)->child($child_selector);
 
       if($exists_in_cart->id) {
@@ -213,7 +214,7 @@ class OrderCart extends WireData implements Module {
    * @return PageArray or Page
    */
     public function getOrdersPage($order_step, $user_id = null) {
-      
+
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $parent_path = $settings["order_root"] . "/{$order_step}-orders/";
       $parent_selector = "$parent_path,include=all"; 

@@ -19,8 +19,9 @@ var Cart = (function () {
 	        },
 	        order: function (e, data) {
 	        	//TODO: Provide success feedback?
-	        	var cart_form = document.getElementsByClassName('cart-items__form');
-	        	cart_form[0].innerHTML = '<h3>' + data.message + '</h3>';
+	        	// Update the cart
+	        	var cart_items = document.getElementsByClassName('cart-items')[0];
+	        	cart_items.innerHTML = data.message;
 	        }
 	    }
 	};
