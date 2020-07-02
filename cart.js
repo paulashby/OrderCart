@@ -7,7 +7,7 @@ var Cart = (function () {
 	        add: function (e, data) {
 	        	//TODO: Provide success feedback - need this for when return is hit after changing quantity
 	        	var cart_items = document.getElementsByClassName('cart-items');
-	        	if(cart_items) {
+	        	if(cart_items && cart_items.length) {
 	        		cart_items[0].innerHTML = data.cart;
 	        	}
 	        },
@@ -56,14 +56,19 @@ var Cart = (function () {
 
 	    actions.add = function (e) {
 
-	    		var id = e.target.dataset.context + e.target.dataset.sku;
-	    		var options = {
+	    	var id = e.target.dataset.context + e.target.dataset.sku;
+    		var token = document.getElementById(id + '_token');
+    		var options = {
 	        	ajaxdata: {
             		action: 'add',
             		params: {
             			sku: e.target.dataset.sku,
             			qty: document.getElementById(id).value
             		}
+            	},
+            	token: {
+            		name: token.name,
+            		value: token.value
             	},
             	role: 'add', // Set this to run callback
             	event: e // Possible needed for callbacks
@@ -74,12 +79,18 @@ var Cart = (function () {
 
 	    actions.remove = function (e) {
 
-			var options = {
+	    	var id = e.target.dataset.context + e.target.dataset.sku;
+	    	var token = document.getElementById(id + '_token');
+	    	var options = {
             	ajaxdata: {
             		action: 'remove',
             		params: {
             			sku: e.target.dataset.sku
             		}
+            	},
+            	token: {
+            		name: token.name,
+            		value: token.value
             	},  
             	role: 'remove', // Set this to run callback
             	event: e // Possibly needed for callbacks
@@ -91,6 +102,7 @@ var Cart = (function () {
 	    actions.update = function (e) {
 	    	
 	    	var id = e.target.dataset.context + e.target.dataset.sku;
+	    	var token = document.getElementById(id + '_token');
 	    	var options = {
             	ajaxdata: {
             		action: 'update',
@@ -99,6 +111,10 @@ var Cart = (function () {
             			sku: e.target.dataset.sku,
             			qty: document.getElementById(id).value
             		}
+            	},
+            	token: {
+            		name: token.name,
+            		value: token.value
             	},  
             	role: 'update', // Set this to run callback
             	event: e // Possibly needed for callbacks
@@ -109,9 +125,14 @@ var Cart = (function () {
 
 	    actions.order = function (e) {
 
+			var token = document.getElementById('order_token');
 			var options = {
             	ajaxdata: {
             		action: 'order'
+            	},
+            	token: {
+            		name: token.name,
+            		value: token.value
             	},  
             	role: 'order', // Set this to run callback
             	event: e // Possibly needed for callbacks
@@ -150,6 +171,7 @@ var Cart = (function () {
 		};
 		xhttp.open("PUT", "", true);
 		xhttp.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+		xhttp.setRequestHeader('X-' + options.token.name, options.token.value);
 		xhttp.setRequestHeader('Content-type', 'application/json');
 		xhttp.send(JSON.stringify(options.ajaxdata));
 	}

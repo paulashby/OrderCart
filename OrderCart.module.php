@@ -11,6 +11,11 @@ class OrderCart extends WireData implements Module {
     ];
   }
 
+  public function init() {
+    $this->token_name = $this->session->CSRF->getTokenName("oc_token");
+    $this->token_value = $this->session->CSRF->getTokenValue("oc_token"); 
+  }
+  
   /**
    * Add product to cart (creates a line-item page as child of /processwire/orders/cart-items)
    *
@@ -148,40 +153,40 @@ class OrderCart extends WireData implements Module {
    */
     public function placeOrder() {
 
-    // Get the parent page for the new order
-    $errors = array();
+      // Get the parent page for the new order
+      $errors = array();
 
-    $orders_parent = $this->getOrdersPage("pending", $this->users->getCurrentUser()->id);
-    $page_maker = $this->modules->get("PageMaker");
-    
-    if($orders_parent->id) {
+      $orders_parent = $this->getOrdersPage("pending", $this->users->getCurrentUser()->id);
+      $page_maker = $this->modules->get("PageMaker");
+      
+      if($orders_parent->id) {
 
-      $settings = $this->modules->getConfig("ProcessOrderPages");
-      $order_number = $this->getOrderNum();
-      $spec = array(
-        "template" => $settings["t_order"], 
-        "parent"=>$orders_parent->path(), 
-        "title"=>$order_number,
-        "name"=>$order_number
-      );
+        $settings = $this->modules->getConfig("ProcessOrderPages");
+        $order_number = $this->getOrderNum();
+        $spec = array(
+          "template" => $settings["t_order"], 
+          "parent"=>$orders_parent->path(), 
+          "title"=>$order_number,
+          "name"=>$order_number
+        );
 
-      // Create the order
-      $order_page = $page_maker->makePage($spec);
-      $cart_items = $this->getCartItems();
+        // Create the order
+        $order_page = $page_maker->makePage($spec);
+        $cart_items = $this->getCartItems();
 
-      foreach ($cart_items as $item) {
-        $item->of(false);
-        $item->parent = $order_page;
-        $item->save();
+        foreach ($cart_items as $item) {
+          $item->of(false);
+          $item->parent = $order_page;
+          $item->save();
+        }
+        $order_message = $this->order_message;
+
+        return json_encode(array("success"=>true, "message"=>"<h3>$order_message</h3>"));  
       }
-      $order_message = $this->order_message;
 
-      return json_encode(array("success"=>true, "message"=>"<h3>$order_message</h3>"));  
+      $errors[] = "The orders page could not be found";
+      return json_encode(array("errors"=>$errors));
     }
-
-    $errors[] = "The orders page could not be found";
-    return json_encode(array("errors"=>$errors));
-  }
   /**
    * Move order to next step to reflect new status
    *
@@ -224,22 +229,22 @@ class OrderCart extends WireData implements Module {
         $user_order_page = $this->pages->get($parent_path)->child($child_selector);
         if($user_order_page->id) {
           return $user_order_page;
+        }
+        $order_template = $settings["t_user_orders"];
+        $spec = array(
+          "template" => $order_template, 
+          "parent"=>$parent_path, 
+          "title"=>$order_parent_name, 
+          "name"=> $order_parent_name
+        );
+
+        // No orders for this user - make a new page within pending orders
+        $page_maker = $this->modules->get("PageMaker");
+        return $page_maker->makePage($spec);
       }
-      $order_template = $settings["t_user_orders"];
-      $spec = array(
-        "template" => $order_template, 
-        "parent"=>$parent_path, 
-        "title"=>$order_parent_name, 
-        "name"=> $order_parent_name
-      );
 
-      // No orders for this user - make a new page within pending orders
-      $page_maker = $this->modules->get("PageMaker");
-      return $page_maker->makePage($spec);
-    }
-
-    // All orders for given step
-    return $this->pages->get($parent_path)->children();
+      // All orders for given step
+      return $this->pages->get($parent_path)->children();
   }
   /**
    * Get order number then increment in db
@@ -332,12 +337,16 @@ class OrderCart extends WireData implements Module {
         "context"=>"listing",  
         "sku"=>$sku,
       );
+
+      $token_name = $this->token_name;
+      $token_value = $this->token_value;
       
       $render = "<form action='' method='post'>
       <h2>$title</h2>
       <label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
       $render .= $this->renderQuantityField($qty_field_options);
       $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
+      <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
       <input type='hidden' id='price' name='price' value='$price'>
       <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-context='listing' data-sku='$sku' data-action='add'> 
       </form>";
@@ -351,10 +360,7 @@ class OrderCart extends WireData implements Module {
    */
     public function renderCart($omitContainer = false) {
 
-      // Including link to js with async defer tag, but not doing the same for jQuery - see
-      // https://stackoverflow.com/questions/436411/where-should-i-put-script-tags-in-html-markup
-      // See id="comment-51651237" 
-
+      
       // Store field and template names in variables for markup
       $settings = $this->modules->get("ProcessOrderPages");
 
@@ -381,21 +387,25 @@ class OrderCart extends WireData implements Module {
         $r_price = $this->renderPrice($price);
         $quantity = $data[$f_quantity];
         $subtotal = $this->renderPrice($price * $quantity);
+
         $qty_field_options = array(
           "context"=>"cart", 
           "sku"=>$sku_ref,
           "quantity"=>$quantity
         );
 
+        $token_name = $this->token_name;
+        $token_value = $this->token_value;
+
         $render .= "<fieldset class='form__fieldset'>
         <legend>$title</legend>";
-        
         $render .= "<p>SKU: {$sku_uc}</p>
           <label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
           $render .= $this->renderQuantityField($qty_field_options);
           $render .= "<p class='form__price'>Pack price: $r_price</p>
           <p class='form__price--subtotal'>Subtotal: $subtotal</p>
           <input type='hidden' name='sku[]' value='{$sku_ref}'>
+          <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
           <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove' data-context='cart' data-sku='{$sku_ref}'>
           <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-context='cart' data-sku='{$sku_ref}'>
           </fieldset>";
@@ -405,7 +415,8 @@ class OrderCart extends WireData implements Module {
       if(count($cart_items)){
 
         $render .= "<form class='cart-items__form' action='' method='post'>
-      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order'>
+          <input type='hidden' id='order_token' name='$token_name' value='$token_value'>
+          <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order'>
         </form>
         </div>";
       } else {
