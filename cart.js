@@ -44,7 +44,6 @@ var Cart = (function () {
 
 	function onDOMloaded () {
 
-		// Do we need to store something for validateOnBlur() which is also called by actions.cancel()? 
 		// Use event handlers in actions object
 
 	    document.addEventListener('click', function (e) { 
@@ -56,90 +55,62 @@ var Cart = (function () {
 
 	    actions.add = function (e) {
 
-	    	var id = e.target.dataset.context + e.target.dataset.sku;
-    		var token = document.getElementById(id + '_token');
-    		var options = {
-	        	ajaxdata: {
-            		action: 'add',
-            		params: {
-            			sku: e.target.dataset.sku,
-            			qty: document.getElementById(id).value
-            		}
-            	},
-            	token: {
-            		name: token.name,
-            		value: token.value
-            	},
-            	role: 'add', // Set this to run callback
-            	event: e // Possible needed for callbacks
-	        };
-	        doAction(options);
-	        e.preventDefault();
-	    };
+	    	var settings = {
+				e: e,
+				action: 'add',
+				token: getToken(e),
+				params: {
+					sku: e.target.dataset.sku,
+	    			qty: document.getElementById(getId(e)).value
+	    		},
+				action_url: e.target.dataset.actionurl
+			};
+			doAction(settings);
+		};
 
 	    actions.remove = function (e) {
 
-	    	var id = e.target.dataset.context + e.target.dataset.sku;
-	    	var token = document.getElementById(id + '_token');
-	    	var options = {
-            	ajaxdata: {
-            		action: 'remove',
-            		params: {
-            			sku: e.target.dataset.sku
-            		}
-            	},
-            	token: {
-            		name: token.name,
-            		value: token.value
-            	},  
-            	role: 'remove', // Set this to run callback
-            	event: e // Possibly needed for callbacks
-	        };
-	        doAction(options);
-	        e.preventDefault();
+	    	var settings = {
+				e: e,
+				action: 'remove',
+				token: getToken(e),
+				params: {
+					sku: e.target.dataset.sku
+	    		},
+				action_url: e.target.dataset.actionurl
+			};
+			doAction(settings);
 	    }	    
 
 	    actions.update = function (e) {
-	    	
-	    	var id = e.target.dataset.context + e.target.dataset.sku;
-	    	var token = document.getElementById(id + '_token');
-	    	var options = {
-            	ajaxdata: {
-            		action: 'update',
-            		params: {
-            			//TODO: Need to do the back end for this - might be as simple as using changeQuantity with cart context
-            			sku: e.target.dataset.sku,
-            			qty: document.getElementById(id).value
-            		}
-            	},
-            	token: {
-            		name: token.name,
-            		value: token.value
-            	},  
-            	role: 'update', // Set this to run callback
-            	event: e // Possibly needed for callbacks
-	        };
-	        doAction(options);
-	        e.preventDefault();
+
+	    	var settings = {
+				e: e,
+				action: 'update',
+				token: getToken(e),
+				params: {
+					sku: e.target.dataset.sku,
+	    			qty: document.getElementById(getId(e)).value
+	    		},
+				action_url: e.target.dataset.actionurl
+			};
+			doAction(settings);
 	    }
 
 	    actions.order = function (e) {
 
-			var token = document.getElementById('order_token');
-			var options = {
-            	ajaxdata: {
-            		action: 'order'
-            	},
-            	token: {
-            		name: token.name,
-            		value: token.value
-            	},  
-            	role: 'order', // Set this to run callback
-            	event: e // Possibly needed for callbacks
-	        };
-	        doAction(options);
-	        e.preventDefault();
-	    }
+	    	var token = document.getElementById('order_token');
+	    	var settings = {
+				e: e,
+				action: 'order',
+				token: {
+					name: token.name,
+					value: token.value
+				},
+				action_url: e.target.dataset.actionurl
+			};
+			doAction(settings);
+		}
 	};
 
 	function dataAttrEventHandler (e, actions) {
@@ -150,7 +121,25 @@ var Cart = (function () {
 	    	actions[action](e);
 	    }
 	}
-	function doAction (options) {
+	function doAction (settings) {
+
+		var options = {
+        	ajaxdata: {
+        		action: settings.action,
+        		params: settings.params
+        	},
+        	token: settings.token, 
+        	action_url: settings.action_url,
+        	role: settings.action, // Set this to run callback
+        	event: settings.e 
+        };
+        if(settings.params){
+        	options.ajaxdata.params = settings.params;
+        }
+        makeRequest(options);
+        settings.e.preventDefault();
+	}
+	function makeRequest (options) {
 
 		var xhttp = new XMLHttpRequest();
 
@@ -169,11 +158,22 @@ var Cart = (function () {
 		    	}
 		    }
 		};
-		xhttp.open("PUT", "", true);
+		xhttp.open("PUT", options.action_url, true);
 		xhttp.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 		xhttp.setRequestHeader('X-' + options.token.name, options.token.value);
 		xhttp.setRequestHeader('Content-type', 'application/json');
 		xhttp.send(JSON.stringify(options.ajaxdata));
 	}
+	function getToken (e) {
 
+		var id = getId (e);
+		var token = document.getElementById(id + '_token');
+		return {
+			name: token.name,
+			value: token.value
+		};
+	}
+	function getId (e) {
+		return e.target.dataset.context + e.target.dataset.sku;
+	}
 }());
