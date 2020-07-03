@@ -13,7 +13,7 @@ class OrderCart extends WireData implements Module {
 
   public function init() {
     $this->token_name = $this->session->CSRF->getTokenName("oc_token");
-    $this->token_value = $this->session->CSRF->getTokenValue("oc_token"); 
+    $this->token_value = $this->session->CSRF->getTokenValue("oc_token");
   }
   
   /**
@@ -328,6 +328,7 @@ class OrderCart extends WireData implements Module {
     protected function renderItem($product) {
 
       $settings = $this->modules->get("ProcessOrderPages");
+      $action_path = $this->pages->get("template=order-actions")->path;
 
       $title = $product->title;
       $sku = $product->sku;
@@ -348,7 +349,7 @@ class OrderCart extends WireData implements Module {
       $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
       <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
       <input type='hidden' id='price' name='price' value='$price'>
-      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-context='listing' data-sku='$sku' data-action='add'> 
+      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'> 
       </form>";
       return $render;
     }
@@ -363,6 +364,7 @@ class OrderCart extends WireData implements Module {
       
       // Store field and template names in variables for markup
       $settings = $this->modules->get("ProcessOrderPages");
+      $action_path = $this->pages->get("template=order-actions")->path;
 
       $f_sku = $settings["f_sku"];
       $f_sku_ref = $settings["f_sku_ref"];
@@ -406,8 +408,8 @@ class OrderCart extends WireData implements Module {
           <p class='form__price--subtotal'>Subtotal: $subtotal</p>
           <input type='hidden' name='sku[]' value='{$sku_ref}'>
           <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
-          <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove' data-context='cart' data-sku='{$sku_ref}'>
-          <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-context='cart' data-sku='{$sku_ref}'>
+          <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
+          <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
           </fieldset>";
       }
       $render .= "</form>";
@@ -416,7 +418,7 @@ class OrderCart extends WireData implements Module {
 
         $render .= "<form class='cart-items__form' action='' method='post'>
           <input type='hidden' id='order_token' name='$token_name' value='$token_value'>
-          <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order'>
+          <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order' data-actionurl='$action_path'>
         </form>
         </div>";
       } else {
