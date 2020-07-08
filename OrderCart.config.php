@@ -24,5 +24,21 @@ $config = array(
 		"description" => "If you want to show product images in your cart, please enter the name of an images field with formatted value set to 'Array of items'", 
 		"value" => "", 
 		"required" => false 
+	),
+	"productImgListingSize" => array(
+		"name"=> "f_product_img_l_size",
+		"type" => "text", 
+		"label" => "Size of product image when shown on listing pages",
+		"description" => "Please enter a size in pixels", 
+		"value" => "", 
+		"required" => false 
+	),
+	"productImgCartSize" => array(
+		"name"=> "f_product_img_c_size",
+		"type" => "text", 
+		"label" => "Size of product image when shown in cart",
+		"description" => "Please enter a size in pixels", 
+		"value" => "", 
+		"required" => false 
 	)
 );

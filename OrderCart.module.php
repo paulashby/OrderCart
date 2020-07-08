@@ -343,7 +343,7 @@ class OrderCart extends WireData implements Module {
       $token_value = $this->token_value;
       $render = "<form action='' method='post'>
       <h2>$title</h2>";
-      $render .= $this->renderProductShot($product);
+      $render .= $this->renderProductShot($product, true);
       $render .= "<label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
       $render .= $this->renderQuantityField($qty_field_options);
       $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
@@ -361,7 +361,6 @@ class OrderCart extends WireData implements Module {
    */
     public function renderCart($omitContainer = false) {
 
-      
       // Store field and template names in variables for markup
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
@@ -431,14 +430,31 @@ class OrderCart extends WireData implements Module {
       return $render;
     }
   /**
+   * Get size of product shot from config
+   *
+   * @param Boolean $listing - context
+   * @return Integer Size in pixels
+   */
+    public function getProductShotSize($listing) {
+      
+      $size_field = $listing ? $this["f_product_img_l_size"] : $this["f_product_img_c_size"];
+
+      if($size_field) {
+        return $size_field;
+      } else {
+        wire("log")->save("errors", "OrderCart module: size not set for product image");
+      }
+    }
+  /**
    * Generate HTML markup for product shot
    *
    * @param Page $product
    * @return string HTML markup
    */
-    public function renderProductShot($product) {
+    public function renderProductShot($product, $listing = false) {
 
       $product_shot_field = $this["f_product_img"];
+      $size = $this->getProductShotSize($listing);
       $product_shot_out = "";
 
       // Are product shots expected?
@@ -451,15 +467,15 @@ class OrderCart extends WireData implements Module {
           if(count($product_shot = $product[$product_shot_field])){
 
             $product_shot = $product[$product_shot_field]->first();
-            $product_shot_url = $product_shot->size(200, 200)->url;
+            $product_shot_url = $product_shot->size($size, $size)->url;
             $product_shot_dsc = $product_shot->description;
             $product_shot_out = "<img src='$product_shot_url' alt='$product_shot_dsc'>";
 
           } else {
-            wire("log")->save("errors", "Product shot unavailable for $title");
+            wire("log")->save("errors", "OrderCart module: product shot unavailable for $title");
           }
         } else {
-          wire("log")->save("errors", "Product shot field does not exist");
+          wire("log")->save("errors", "OrderCart module: product shot field does not exist");
         }
       }
       return $product_shot_out;
