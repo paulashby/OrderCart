@@ -341,10 +341,10 @@ class OrderCart extends WireData implements Module {
 
       $token_name = $this->token_name;
       $token_value = $this->token_value;
-      
       $render = "<form action='' method='post'>
-      <h2>$title</h2>
-      <label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
+      <h2>$title</h2>";
+      $render .= $this->renderProductShot($product);
+      $render .= "<label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
       $render .= $this->renderQuantityField($qty_field_options);
       $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
       <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
@@ -401,6 +401,7 @@ class OrderCart extends WireData implements Module {
 
         $render .= "<fieldset class='form__fieldset'>
         <legend>$title</legend>";
+        $render .= $this->renderProductShot($product);
         $render .= "<p>SKU: {$sku_uc}</p>
           <label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
           $render .= $this->renderQuantityField($qty_field_options);
@@ -428,5 +429,39 @@ class OrderCart extends WireData implements Module {
       $render .= $close;
 
       return $render;
+    }
+  /**
+   * Generate HTML markup for product shot
+   *
+   * @param Page $product
+   * @return string HTML markup
+   */
+    public function renderProductShot($product) {
+
+      $product_shot_field = $this["f_product_img"];
+      $product_shot_out = "";
+
+      // Are product shots expected?
+      if($product_shot_field){
+
+        // Does product template have the image field?
+        if($product[$product_shot_field]) {
+
+          // Is image field populated?
+          if(count($product_shot = $product[$product_shot_field])){
+
+            $product_shot = $product[$product_shot_field]->first();
+            $product_shot_url = $product_shot->size(200, 200)->url;
+            $product_shot_dsc = $product_shot->description;
+            $product_shot_out = "<img src='$product_shot_url' alt='$product_shot_dsc'>";
+
+          } else {
+            wire("log")->save("errors", "Product shot unavailable for $title");
+          }
+        } else {
+          wire("log")->save("errors", "Product shot field does not exist");
+        }
+      }
+      return $product_shot_out;
     }
 }

@@ -16,5 +16,13 @@ $config = array(
 		"description" => "Message to show when customer successfully places an order", 
 		"value" => "Thank you for your order - you will receive a confirmation email shorty.", 
 		"required" => true 
+	),
+	"productImgField" => array(
+		"name"=> "f_product_img",
+		"type" => "text", 
+		"label" => "Name of product image field",
+		"description" => "If you want to show product images in your cart, please enter the name of an images field with formatted value set to 'Array of items'", 
+		"value" => "", 
+		"required" => false 
 	)
 );
