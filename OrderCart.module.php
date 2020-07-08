@@ -468,8 +468,9 @@ class OrderCart extends WireData implements Module {
 
             $product_shot = $product[$product_shot_field]->first();
             $product_shot_url = $product_shot->size($size, $size)->url;
-            $product_shot_dsc = $product_shot->description;
-            $product_shot_out = "<img src='$product_shot_url' alt='$product_shot_dsc'>";
+            $dsc = $product_shot->description;
+            $alt_text = $dsc ? $dsc : $product->title;
+            $product_shot_out = "<img src='$product_shot_url' alt='$alt_text'>";
 
           } else {
             wire("log")->save("errors", "OrderCart module: product shot unavailable for $title");
