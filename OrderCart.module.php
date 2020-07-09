@@ -19,28 +19,26 @@ class OrderCart extends WireData implements Module {
   /**
    * Add product to cart (creates a line-item page as child of /processwire/orders/cart-items)
    *
-   * @param string $sku The product code
-   * @param string $quantity 
-   * @return string The configured field name
+   * @param String $sku The product code
+   * @param Integer $quantity 
+   * @return String The configured field name
    */
     public function addToCart($sku, $quantity) {
       
       $settings = $this->modules->getConfig("ProcessOrderPages");
-      $skus = $this->sanitizer->text($sku);
-      $new_quantity = $this->sanitizer->int((int)$quantity);
       
       $f_customer = $settings["f_customer"];
       $f_sku_ref = $settings["f_sku_ref"];
       $user_id = $this->users->getCurrentUser()->id;
       $parent_selector = $this->getCartPath();
-      $child_selector = "$f_customer=$user_id,$f_sku_ref=$skus";
+      $child_selector = "$f_customer=$user_id,$f_sku_ref=$sku";
 
       $exists_in_cart = $this->pages->get($parent_selector)->child($child_selector);
 
       if($exists_in_cart->id) {
 
         // Add to exisitng line item if user already has this product in their cart
-        $sum = $new_quantity + $exists_in_cart[$settings["f_quantity"]];
+        $sum = $quantity + $exists_in_cart[$settings["f_quantity"]];
         $exists_in_cart->of(false);
         $exists_in_cart->set($settings["f_quantity"], $sum);
         $exists_in_cart->save();
@@ -52,7 +50,7 @@ class OrderCart extends WireData implements Module {
         $item_data = array("title" => $item_title);
         $item_data[$settings["f_customer"]] = $user_id;
         $item_data[$settings["f_sku_ref"]] = $sku;
-        $item_data[$settings["f_quantity"]] = $new_quantity;
+        $item_data[$settings["f_quantity"]] = $quantity;
 
         $cart_item = $this->wire("pages")->add($settings["t_line_item"],  $this->getCartPath(), $item_data);
       }
@@ -62,20 +60,20 @@ class OrderCart extends WireData implements Module {
   /**
    * Change quantity of cart item
    *
-   * @param string  $sku The item to update
-   * @param string  $qty The new value
+   * @param String  $sku The item to update
+   * @param Integer $quantity The new value
    * @return Json Updated cart markup if successful
    */
-    public function changeQuantity($sku, $qty) {
+    public function changeQuantity($sku, $quantity) {
+
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $cart_item = $this->getCartItem($sku);
-      $qtys = $this->sanitizer->text($qty);
 
       if($cart_item) { // getCartItem returns false if the item cannot be found
 
         // Update product
         $cart_item->of(false);
-        $cart_item->set($settings["f_quantity"], (int)$qtys);
+        $cart_item->set($settings["f_quantity"], $quantity);
         $cart_item->save();
 
         // Return entire form to cart
@@ -87,10 +85,11 @@ class OrderCart extends WireData implements Module {
     /**
    * Remove line item from cart
    *
-   * @param string  $sku The item to remove
+   * @param String  $sku The item to remove
    * @return Json Updated cart markup if successful
    */
     public function removeCartItem($sku) {
+
       $cart_item = $this->getCartItem($sku);
       
       if($cart_item->id) {
@@ -103,19 +102,18 @@ class OrderCart extends WireData implements Module {
   /**
    * Get item from cart
    *
-   * @param string  $sku The item to get
-   * @return object Line item page or boolean false
+   * @param String  $sku The item to get
+   * @return Object Line item page or boolean false
    */
     protected function getCartItem($sku) {
 
       $settings = $this->modules->getConfig("ProcessOrderPages");
-      $skus = $this->sanitizer->text($sku);
       $user_id = $this->users->getCurrentUser()->id;
       $f_customer = $settings["f_customer"];
       $f_sku_ref = $settings["f_sku_ref"];
       $cart_path = $this->getCartPath();
       $parent_selector = $cart_path;
-      $child_selector = "{$f_customer}={$user_id}, {$f_sku_ref}={$skus}";
+      $child_selector = "{$f_customer}={$user_id}, {$f_sku_ref}={$sku}";
       $cart_item = $this->pages->findOne($parent_selector)->child($child_selector);
 
       if($cart_item->id) {
@@ -139,7 +137,7 @@ class OrderCart extends WireData implements Module {
   /**
    * Get the path of the cart
    *
-   * @return string
+   * @return String
    */
     protected function getCartPath() {
 
@@ -190,9 +188,9 @@ class OrderCart extends WireData implements Module {
   /**
    * Move order to next step to reflect new status
    *
-   * @param string $order_num
-   * @param string $order_step
-   * @return boolean
+   * @param String $order_num
+   * @param String $order_step
+   * @return Boolean
    */
     public function progressOrder($order_num, $order_step) {
 
@@ -214,8 +212,8 @@ class OrderCart extends WireData implements Module {
   /**
    * Get parent page for order - for current user only if id supplied
    *
-   * @param string $order_step
-   * @param integer $user_id
+   * @param String $order_step
+   * @param Integer $user_id
    * @return PageArray or Page
    */
     public function getOrdersPage($order_step, $user_id = null) {
@@ -249,49 +247,23 @@ class OrderCart extends WireData implements Module {
   /**
    * Get order number then increment in db
    *
-   * @return  string The unincremented order number
+   * @return  String The unincremented order number
    */
     protected function getOrderNum() {
 
       $data = $this->modules->getConfig("ProcessOrderPages");
-      $order_num = $this->sanitizer->text($data["order_num"]);
+      $order_num = $data["order_num"];
       $this_order_num = $order_num;
       $order_num++;
-      $data["order_num"] = $this->sanitizer->text($order_num);
+      $data["order_num"] = $order_num;
       $this->modules->saveConfig("ProcessOrderPages", $data);
       return $this_order_num;
     }
   /**
-   * Set order number
-   *
-   * @param string  $val The number to base new orders on
-   * @return boolean
-   */
-    protected function setOrderNum($val) {
-
-      $data = $this->modules->getConfig("ProcessOrderPages");
-      $data["order_num"] = $val;
-      return $this->modules->saveConfig("ProcessOrderPages", $data);
-    }
-  /**
-   * Increment order number
-   *
-   * @return string The new order number
-   */
-    protected function incrementOrderNum() {
-
-      $data = $this->modules->getConfig("ProcessOrderPages");
-      $order_num = $this->sanitizer->text($data["order_num"]);
-      $order_num++;
-      $data["order_num"] = $this->sanitizer->text($order_num);
-      $this->modules->saveConfig("ProcessOrderPages", $data);
-      return $data["order_num"];
-    }
-  /**
    * Convert an integer representing GB pence to a GBP string 
    *
-   * @param int $pence
-   * @return string GBP value as a string with decimal point and prepended £
+   * @param Integer $pence
+   * @return String GBP value as a string with decimal point and prepended £
    */
     public function renderPrice($pence) {
 
@@ -323,7 +295,7 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for product listing form
    *
    * @param Page $product The product item
-   * @return string HTML markup
+   * @return String HTML markup
    */
     protected function renderItem($product) {
 
@@ -356,8 +328,8 @@ class OrderCart extends WireData implements Module {
   /**
    * Generate HTML markup for current user's cart
    *
-   * @param boolean $omitContainer - true if outer div not required (useful to avoid losing click handler)
-   * @return string HTML markup
+   * @param Boolean $omitContainer - true if outer div not required (useful to avoid losing click handler)
+   * @return String HTML markup
    */
     public function renderCart($omitContainer = false) {
 
@@ -433,10 +405,10 @@ class OrderCart extends WireData implements Module {
    * Get size of product shot from config
    *
    * @param Boolean $listing - context
-   * @return Integer Size in pixels
+   * @return String Size in pixels
    */
     public function getProductShotSize($listing) {
-      
+
       $size_field = $listing ? $this["f_product_img_l_size"] : $this["f_product_img_c_size"];
 
       if($size_field) {
@@ -449,7 +421,7 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for product shot
    *
    * @param Page $product
-   * @return string HTML markup
+   * @return String HTML markup
    */
     public function renderProductShot($product, $listing = false) {
 
