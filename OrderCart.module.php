@@ -436,13 +436,24 @@ class OrderCart extends WireData implements Module {
         if($product[$product_shot_field]) {
 
           // Is image field populated?
-          if(count($product_shot = $product[$product_shot_field])){
+          if(count($product[$product_shot_field])){
 
-            $product_shot = $product[$product_shot_field]->first();
-            $product_shot_url = $product_shot->size($size, $size)->url;
-            $dsc = $product_shot->description;
-            $alt_text = $dsc ? $dsc : $product->title;
-            $product_shot_out = "<img src='$product_shot_url' alt='$alt_text'>";
+            $product_shot_out = "";
+
+            foreach($product[$product_shot_field] as $product_shot) {
+
+              $product_shot_url = $product_shot->size($size, $size)->url;
+              $dsc = $product_shot->description;
+              $alt_text = $dsc ? $dsc : $product->title;
+              $product_shot_out .= "<img src='$product_shot_url' alt='$alt_text'>";
+
+              if( ! $listing) {
+                // Only require first image in array for shopping cart
+                break;
+              }
+
+            }
+
 
           } else {
             wire("log")->save("errors", "OrderCart module: product shot unavailable for $title");
