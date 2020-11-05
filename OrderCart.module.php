@@ -316,13 +316,21 @@ class OrderCart extends WireData implements Module {
       $render = "<form action='' method='post'>
       <h2>$title</h2>";
       $render .= $this->renderProductShot($product, true);
-      $render .= "<label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
-      $render .= $this->renderQuantityField($qty_field_options);
-      $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
-      <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
-      <input type='hidden' id='price' name='price' value='$price'>
-      <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'> 
-      </form>";
+
+      // Include cart buttons if logged in
+      if($this->wire("user")->isLoggedin()) {
+
+        $render .= "<label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
+        $render .= $this->renderQuantityField($qty_field_options);
+        $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
+        <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
+        <input type='hidden' id='price' name='price' value='$price'>
+        <input class='form__button form__button--submit' type='submit' name='submit' value='Add to cart' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'>";
+      } else {
+        $render .= "<p>Login to add to order</p>";
+      }
+
+      $render .= "</form>";
       return $render;
     }
   /**
