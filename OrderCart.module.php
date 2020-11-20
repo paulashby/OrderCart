@@ -337,9 +337,10 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for current user's cart
    *
    * @param Boolean $omitContainer - true if outer div not required (useful to avoid losing click handler)
+   * @param Boolean false or Function $customImageMarkup
    * @return String HTML markup
    */
-    public function renderCart($omitContainer = false) {
+    public function renderCart($omitContainer = false, $customImageMarkup = false) {
 
       // Store field and template names in variables for markup
       $settings = $this->modules->get("ProcessOrderPages");
@@ -380,7 +381,13 @@ class OrderCart extends WireData implements Module {
 
         $render .= "<fieldset class='form__fieldset'>
         <legend>$title</legend>";
-        $render .= $this->renderProductShot($product);
+
+        if($customImageMarkup) {
+          $render .= $customImageMarkup($product);
+        } else {
+          $render .= $this->renderProductShot($product);
+        }
+
         $render .= "<p>SKU: {$sku_uc}</p>
           <label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
           $render .= $this->renderQuantityField($qty_field_options);
