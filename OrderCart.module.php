@@ -298,7 +298,6 @@ class OrderCart extends WireData implements Module {
    * @return String HTML markup
    */
     protected function renderItem($product) {
-
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
 
@@ -322,9 +321,7 @@ class OrderCart extends WireData implements Module {
 
         $render .= "<label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
         $render .= $this->renderQuantityField($qty_field_options);
-        $render .= "<input type='hidden' id='sku' name='sku' value='$sku'>
-        <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
-        <input type='hidden' id='price' name='price' value='$price'>
+        $render .= "<input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
         <input class='form__button form__button--submit' type='submit' name='submit' value='Add to cart' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'>";
       } else {
         $render .= "<p>Login to add to order</p>";
@@ -334,28 +331,41 @@ class OrderCart extends WireData implements Module {
       return $render;
     }
   /**
-   * Generate HTML markup for current user's cart
+   * Generate HTML markup for cart container
    *
-   * @param Boolean $omitContainer - true if outer div not required (useful to avoid losing click handler)
-   * @param Boolean false or Function $customImageMarkup
    * @return String HTML markup
    */
-    public function renderCart($omitContainer = false, $customImageMarkup = false) {
+    public function getOuterCartMarkup() {
+
+      $cart_script_url = $this->config->urls->site . "modules/OrderCart/cart.js";
+
+      return [
+        "open" => "<script src='$cart_script_url'></script>
+        <div class='cart-items'>",
+        "close" => "</div>"
+      ];
+    }
+  /**
+   * Generate HTML markup for empty cart to be populated by AJAX call
+   *
+   * @return String HTML markup
+   */
+    public function renderEmptyCart() {
+
+      $cart_markup = $this->getOuterCartMarkup();
+      return $cart_markup["open"] . $cart_markup["close"];
+    }  
+    public function populateCart($customImageMarkup = false) {
 
       // Store field and template names in variables for markup
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
-
       $f_sku = $settings["f_sku"];
       $f_sku_ref = $settings["f_sku_ref"];
       $f_quantity = $settings["f_quantity"];
-      $open = $omitContainer ? "" : "<div class='cart-items'><script src='" . $this->config->urls->site . "modules/OrderCart/cart.js'></script>";
-      $close = $omitContainer ? "" : "</div>";
 
       $cart_items = $this->getCartItems();
-
-      $render = $open;
-      $render .= "<div class='cart-forms'><form class='cart-items__form' action='' method='post'>";
+      $render = "<div class='cart-forms'><form class='cart-items__form' action='' method='post'>";
 
       // cart_items are line_items NOT product pages
       foreach ($cart_items as $item => $data) {
@@ -364,6 +374,7 @@ class OrderCart extends WireData implements Module {
         $sku_uc = strtoupper($sku_ref);
         $product_selector = "template=product, {$f_sku}={$sku_ref}";
         $product = $this->pages->findOne($product_selector);
+
         $title = $product->title;
         $price = $settings->getPrice($product);
         $r_price = $this->renderPrice($price);
@@ -393,7 +404,6 @@ class OrderCart extends WireData implements Module {
           $render .= $this->renderQuantityField($qty_field_options);
           $render .= "<p class='form__price'>Pack price: $r_price</p>
           <p class='form__price--subtotal'>Subtotal: $subtotal</p>
-          <input type='hidden' name='sku[]' value='{$sku_ref}'>
           <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
           <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
           <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
@@ -411,8 +421,25 @@ class OrderCart extends WireData implements Module {
       } else {
         $render .= "<h3>There are currently no items in the cart</h3>";
       }
+      return $render;
+    }    
+  /**
+   * Generate HTML markup for current user's cart
+   *
+   * @param Boolean $omitContainer - true if outer div not required (useful to avoid losing click handler)
+   * @param Boolean false or Function $customImageMarkup
+   * @return String HTML markup
+   */
+  public function renderCart($omitContainer = false, $customImageMarkup = false) {
 
-      $render .= $close;
+      if($omitContainer) {
+        $container = ["open" => "", "close" => ""];
+      } else {
+        $container = $this->getOuterCartMarkup();
+      }
+      $render = $container["open"];
+      $render .= $this->populateCart($customImageMarkup);
+      $render .= $container["close"];
 
       return $render;
     }
