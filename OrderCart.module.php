@@ -155,11 +155,15 @@ class OrderCart extends WireData implements Module {
       $errors = array();
 
       $orders_parent = $this->getOrdersPage("pending", $this->users->getCurrentUser()->id);
-      $page_maker = $this->modules->get("PageMaker");
-      
-      if($orders_parent->id) {
 
+      if($orders_parent->id) {
+        
+        $pop = $this->modules->get("ProcessOrderPages");
+        $page_maker = $this->modules->get("PageMaker");
         $settings = $this->modules->getConfig("ProcessOrderPages");
+        $f_sku = $settings["f_sku"];
+        $f_sku_ref = $settings["f_sku_ref"];
+        $f_purchased_price = $settings["f_ordered_price"];
         $order_number = $this->getOrderNum();
         $spec = array(
           "template" => $settings["t_order"], 
@@ -173,7 +177,13 @@ class OrderCart extends WireData implements Module {
         $cart_items = $this->getCartItems();
 
         foreach ($cart_items as $item) {
+          $sku = $item[$f_sku_ref];
+          $product_selector = "template=product, $f_sku=$sku";
+          $product = $this->pages->findOne($product_selector);
           $item->of(false);
+          // Store price at time of purchase so unaffected by subsequent price changes
+          $price = $pop->getPrice($product);
+          $item[$f_purchased_price] = $price;
           $item->parent = $order_page;
           $item->save();
         }
@@ -390,8 +400,7 @@ class OrderCart extends WireData implements Module {
         $token_name = $this->token_name;
         $token_value = $this->token_value;
 
-        $render .= "<fieldset class='form__fieldset'>
-        <legend>$title</legend>";
+        $render .= "<fieldset class='form__fieldset'>";
 
         if($customImageMarkup) {
           $render .= $customImageMarkup($product);
