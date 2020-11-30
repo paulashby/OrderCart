@@ -3,29 +3,40 @@ var Cart = (function () {
     'use strict';
 
     var setup = {
+    	success_events : {
+    		add: 'addedToCart',
+			remove: 'removedFromCart',
+			update: 'cartUpdated',
+			order: 'orderPlaced'
+    	},
 	    success_callbacks : {
 	        add: function (e, data) {
 	        	//TODO: Provide success feedback - need this for when return is hit after changing quantity
 	        	var cart_items = document.getElementsByClassName('cart-items');
+	        	
 	        	if(cart_items && cart_items.length) {
 	        		cart_items[0].innerHTML = data.cart;
+	        		e.target.dispatchEvent(setup.success_events.add);
 	        	}
 	        },
 	        remove: function (e, data) {
 	        	// Update the cart
 	        	var cart_items = document.getElementsByClassName('cart-items')[0];
 	        	cart_items.innerHTML = data.cart;
+	        	e.target.dispatchEvent(setup.success_events.remove);
 	        },
 	        update: function (e, data) {
 	        	// Update the cart
 	        	var cart_items = document.getElementsByClassName('cart-items')[0];
 	        	cart_items.innerHTML = data.cart;
+	        	e.target.dispatchEvent(setup.success_events.update);
 	        },
 	        order: function (e, data) {
 	        	//TODO: Provide success feedback?
 	        	// Update the cart
 	        	var cart_items = document.getElementsByClassName('cart-items')[0];
 	        	cart_items.innerHTML = data.message;
+	        	e.target.dispatchEvent(setup.success_events.order);
 	        }
 	    }
 	};
@@ -54,7 +65,6 @@ var Cart = (function () {
 	    }, false);
 
 	    actions.add = function (e) {
-
 	    	var settings = {
 				e: e,
 				action: 'add',
@@ -111,8 +121,19 @@ var Cart = (function () {
 			};
 			doAction(settings);
 		}
+		initSuccessEvents(setup.success_events);
 	};
 
+	// Converts strings in setup.success_events to events
+	function initSuccessEvents (evts) {
+		for (var ev in evts) {
+			if (evts.hasOwnProperty(ev)) {
+				var $evt_string = evts[ev];
+				evts[ev] = document.createEvent('Event');
+				setup.success_events[ev].initEvent($evt_string, true, true);
+			}
+		}
+	}
 	function dataAttrEventHandler (e, actions) {
 
 	    var action = e.target.dataset.action;
