@@ -347,7 +347,7 @@ class OrderCart extends WireData implements Module {
    */
     public function getOuterCartMarkup() {
 
-      $cart_script_url = $this->config->urls->site . "modules/OrderCart/cart.js";
+      $cart_script_url = $this->config->urls->site . "modules/OrderCart/ordercart.js";
 
       return [
         "open" => "<script src='$cart_script_url'></script>
@@ -376,6 +376,8 @@ class OrderCart extends WireData implements Module {
 
       $cart_items = $this->getCartItems();
       $render = "<div class='cart-forms'><form class='cart-items__form' action='' method='post'>";
+      // Track number of images in case $customImageMarkup has a lazy loading threshold
+      $eager_count = 0;
 
       // cart_items are line_items NOT product pages
       foreach ($cart_items as $item => $data) {
@@ -403,7 +405,8 @@ class OrderCart extends WireData implements Module {
         $render .= "<fieldset class='form__fieldset'>";
 
         if($customImageMarkup) {
-          $render .= $customImageMarkup($product);
+          $eager_count++;
+          $render .= $customImageMarkup($product, $eager_count);
         } else {
           $render .= $this->renderProductShot($product);
         }
