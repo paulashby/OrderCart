@@ -1,3 +1,9 @@
+if (!window.jQuery) {
+  document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>');
+}
+
+//TODO: Refactor with jQuery since we're now using its custom events.
+
 var Cart = (function () {
 
     'use strict';
@@ -12,31 +18,16 @@ var Cart = (function () {
 	    success_callbacks : {
 	        add: function (e, data) {
 	        	//TODO: Provide success feedback - need this for when return is hit after changing quantity
-	        	var cart_items = document.getElementsByClassName('cart-items');
-	        	
-	        	if(cart_items && cart_items.length) {
-	        		cart_items[0].innerHTML = data.cart;
-	        		e.target.dispatchEvent(setup.success_events.add);
-	        	}
+	        	updateCart('add', data);
 	        },
 	        remove: function (e, data) {
-	        	// Update the cart
-	        	var cart_items = document.getElementsByClassName('cart-items')[0];
-	        	cart_items.innerHTML = data.cart;
-	        	e.target.dispatchEvent(setup.success_events.remove);
+	        	updateCart('remove', data);
 	        },
 	        update: function (e, data) {
-	        	// Update the cart
-	        	var cart_items = document.getElementsByClassName('cart-items')[0];
-	        	cart_items.innerHTML = data.cart;
-	        	e.target.dispatchEvent(setup.success_events.update);
+	        	updateCart('update', data);
 	        },
 	        order: function (e, data) {
-	        	//TODO: Provide success feedback?
-	        	// Update the cart
-	        	var cart_items = document.getElementsByClassName('cart-items')[0];
-	        	cart_items.innerHTML = data.message;
-	        	e.target.dispatchEvent(setup.success_events.order);
+	        	updateCart('order', data);
 	        }
 	    }
 	};
@@ -65,46 +56,32 @@ var Cart = (function () {
 	    }, false);
 
 	    actions.add = function (e) {
-	    	var settings = {
-				e: e,
-				action: 'add',
-				token: getToken(e),
-				params: {
-					sku: e.target.dataset.sku,
-	    			qty: document.getElementById(getId(e)).value
-	    		},
-				action_url: e.target.dataset.actionurl
-			};
-			doAction(settings);
-		};
+
+	    	var params = {
+				sku: e.target.dataset.sku,
+    			qty: document.getElementById(getId(e)).value
+    		};
+
+	    	changeQuantity (e, 'add', params);
+	    }
 
 	    actions.remove = function (e) {
 
-	    	var settings = {
-				e: e,
-				action: 'remove',
-				token: getToken(e),
-				params: {
-					sku: e.target.dataset.sku
-	    		},
-				action_url: e.target.dataset.actionurl
-			};
-			doAction(settings);
+	    	var params = {
+				sku: e.target.dataset.sku
+    		};
+
+	    	changeQuantity (e, 'remove', params);
 	    }	    
 
 	    actions.update = function (e) {
 
-	    	var settings = {
-				e: e,
-				action: 'update',
-				token: getToken(e),
-				params: {
-					sku: e.target.dataset.sku,
-	    			qty: document.getElementById(getId(e)).value
-	    		},
-				action_url: e.target.dataset.actionurl
-			};
-			doAction(settings);
+	    	var params = {
+				sku: e.target.dataset.sku,
+    			qty: document.getElementById(getId(e)).value
+    		};
+
+	    	changeQuantity (e, 'update', params);
 	    }
 
 	    actions.order = function (e) {
@@ -121,19 +98,31 @@ var Cart = (function () {
 			};
 			doAction(settings);
 		}
-		initSuccessEvents(setup.success_events);
 	};
-
-	// Converts strings in setup.success_events to events
-	function initSuccessEvents (evts) {
-		for (var ev in evts) {
-			if (evts.hasOwnProperty(ev)) {
-				var $evt_string = evts[ev];
-				evts[ev] = document.createEvent('Event');
-				setup.success_events[ev].initEvent($evt_string, true, true);
-			}
-		}
+	function changeQuantity (e, action, params) {
+		var settings = {
+			e: e,
+			action: action,
+			token: getToken(e),
+			params: params,
+			action_url: e.target.dataset.actionurl
+		};
+		doAction(settings);
 	}
+	function updateCart (action, data) {
+		var cart_items = $('.cart-items');
+	        	
+    	if(cart_items && cart_items.length) {
+    		cart_items.html(data.cart);
+
+    		// Dispatch event for interested parties
+    		$.event.trigger({
+				type: "updateCart",
+				action: action,
+				count: data.count
+			});
+    	}
+    }
 	function dataAttrEventHandler (e, actions) {
 
 	    var action = e.target.dataset.action;

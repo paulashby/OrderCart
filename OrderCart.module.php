@@ -54,8 +54,9 @@ class OrderCart extends WireData implements Module {
 
         $cart_item = $this->wire("pages")->add($settings["t_line_item"],  $this->getCartPath(), $item_data);
       }
+      $count = $this->getNumCartItems();
 
-      return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));
+      return json_encode(array("success"=>true, "cart"=>$this->renderCart(true), "count"=>$count));
     }
   /**
    * Change quantity of cart item
@@ -76,8 +77,10 @@ class OrderCart extends WireData implements Module {
         $cart_item->set($settings["f_quantity"], $quantity);
         $cart_item->save();
 
+        $count = $this->getNumCartItems();
+
         // Return entire form to cart
-        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));
+        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true), "count"=>$count));
       }
 
       return json_encode(array("error"=>"The item could not be found"));
@@ -94,8 +97,9 @@ class OrderCart extends WireData implements Module {
       
       if($cart_item->id) {
         $cart_item->delete(true);
+        $count = $this->getNumCartItems();
 
-        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true)));  
+        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true), "count"=>$count));  
       }
       return json_encode(array("error"=>"The item could not be found"));
     }
@@ -133,6 +137,24 @@ class OrderCart extends WireData implements Module {
       $t_line_item = $settings["t_line_item"];
       $f_customer = $settings["f_customer"];
       return $this->pages->findOne($this->getCartPath())->children("template={$t_line_item}, {$f_customer}={$user_id}");
+    }
+
+  /**
+   * Get number of items in this user's cart
+   *
+   * @return Integer
+   */
+    public function getNumCartItems() {
+
+      $settings = $this->modules->getConfig("ProcessOrderPages");
+      $qty = $settings["f_quantity"];
+      $cart_items = $this->getCartItems();
+      $num_items = 0;
+
+      foreach ($cart_items as $item) {
+        $num_items += $item[$qty];
+      }
+      return $num_items;
     }
   /**
    * Get the path of the cart
@@ -189,7 +211,7 @@ class OrderCart extends WireData implements Module {
         }
         $order_message = $this->order_message;
 
-        return json_encode(array("success"=>true, "message"=>"<h3>$order_message</h3>"));  
+        return json_encode(array("success"=>true, "cart"=>"<h3>$order_message</h3>", "count"=>0));  
       }
 
       $errors[] = "The orders page could not be found";
@@ -505,10 +527,7 @@ class OrderCart extends WireData implements Module {
                 // Only require first image in array for shopping cart
                 break;
               }
-
             }
-
-
           } else {
             wire("log")->save("errors", "OrderCart module: product shot unavailable for $title");
           }
