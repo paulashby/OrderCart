@@ -128,29 +128,33 @@ class OrderCart extends WireData implements Module {
   /**
    * Get all cart items for the current user
    *
+   * @param Boolean/Integer $user_id - integer provided at login as getCurrentUser() returns guest immediately after login
    * @return wireArray The cart items
    */
-    protected function getCartItems() {
-
+    protected function getCartItems($user_id = false) {
+      if(! $user_id) {
+        $user_id = $this->users->getCurrentUser()->id;
+      }
       $settings = $this->modules->getConfig("ProcessOrderPages");
-      $user_id = $this->users->getCurrentUser()->id;
       $t_line_item = $settings["t_line_item"];
       $f_customer = $settings["f_customer"];
+
       return $this->pages->findOne($this->getCartPath())->children("template={$t_line_item}, {$f_customer}={$user_id}");
     }
 
   /**
    * Get number of items in this user's cart
    *
+   * @param Boolean/Integer $user_id - integer provided at login as getCurrentUser() returns guest immediately after login
    * @return Integer
    */
-    public function getNumCartItems() {
+    public function getNumCartItems($user_id = false) {
 
       $settings = $this->modules->getConfig("ProcessOrderPages");
       $qty = $settings["f_quantity"];
-      $cart_items = $this->getCartItems();
+      $cart_items = $this->getCartItems($user_id);
       $num_items = 0;
-
+      
       foreach ($cart_items as $item) {
         $num_items += $item[$qty];
       }
