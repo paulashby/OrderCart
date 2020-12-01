@@ -1,21 +1,16 @@
-if (!window.jQuery) {
-  document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>');
-}
-
 //TODO: Refactor with jQuery since we're now using its custom events.
 
 var Cart = (function () {
 
     'use strict';
 
+    if (!window.jQuery) {
+	  document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>');
+	}
+
+
     var setup = {
-    	success_events : {
-    		add: 'addedToCart',
-			remove: 'removedFromCart',
-			update: 'cartUpdated',
-			order: 'orderPlaced'
-    	},
-	    success_callbacks : {
+    	success_callbacks : {
 	        add: function (e, data) {
 	        	//TODO: Provide success feedback - need this for when return is hit after changing quantity
 	        	updateCart('add', data);
