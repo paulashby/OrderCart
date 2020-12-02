@@ -4,11 +4,6 @@ var Cart = (function () {
 
     'use strict';
 
-    if (!window.jQuery) {
-	  document.write('<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"><\/script>');
-	}
-
-
     var setup = {
     	success_callbacks : {
 	        add: function (e, data) {
@@ -107,16 +102,16 @@ var Cart = (function () {
 	function updateCart (action, data) {
 		var cart_items = $('.cart-items');
 	        	
-    	if(cart_items && cart_items.length) {
+    	if(action !== 'add' && cart_items && cart_items.length) {
     		cart_items.html(data.cart);
-
-    		// Dispatch event for interested parties
-    		$.event.trigger({
-				type: "updateCart",
-				action: action,
-				count: data.count
-			});
     	}
+
+		// Dispatch event for interested parties
+		$.event.trigger({
+			type: "updateCart",
+			action: action,
+			count: data.count
+		});
     }
 	function dataAttrEventHandler (e, actions) {
 
