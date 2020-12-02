@@ -394,6 +394,12 @@ class OrderCart extends WireData implements Module {
     }  
     public function populateCart($customImageMarkup = false) {
 
+      if( ! $this["customImageMarkup"] && $customImageMarkup) {
+        $data = $this->modules->getConfig($this->className);
+        $data["customImageMarkup"] = $customImageMarkup;
+        $this->modules->saveConfig($this->className, $data);
+      }
+
       // Store field and template names in variables for markup
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
@@ -431,9 +437,10 @@ class OrderCart extends WireData implements Module {
 
         $render .= "<fieldset class='form__fieldset'>";
 
-        if($customImageMarkup) {
+        $imageMarkupFile = $this["customImageMarkup"];
+        if($imageMarkupFile) {
           $eager_count++;
-          $render .= $customImageMarkup($product, $eager_count);
+          $render .= $this->files->render($imageMarkupFile, array("product"=>$product, "img_count"=>$eager_count));
         } else {
           $render .= $this->renderProductShot($product);
         }
