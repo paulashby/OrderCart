@@ -4,7 +4,7 @@ class OrderCart extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'Order Cart',
-      'summary' => 'Provide front end order system for ProcessOrderPages. Requires >= jQuery 3.4.1',
+      'summary' => 'Provide front end order system for ProcessOrderPages. Requires jQuery >= 3.4.1',
       'author' => 'Paul Ashby, primitive.co',
       'version' => 1,
       "requires" => "ProcessOrderPages"
