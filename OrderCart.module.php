@@ -4,7 +4,7 @@ class OrderCart extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'Order Cart',
-      'summary' => 'Provide front end order system for ProcessOrderPages',
+      'summary' => 'Provide front end order system for ProcessOrderPages. Requires >= jQuery 3.4.1',
       'author' => 'Paul Ashby, primitive.co',
       'version' => 1,
       "requires" => "ProcessOrderPages"
@@ -21,7 +21,7 @@ class OrderCart extends WireData implements Module {
    *
    * @param String $sku The product code
    * @param Integer $quantity 
-   * @return String The configured field name
+   * @return Json Updated cart markup if successful
    */
     public function addToCart($sku, $quantity) {
       
@@ -56,6 +56,7 @@ class OrderCart extends WireData implements Module {
       }
       $count = $this->getNumCartItems();
 
+      // Returning cart markup although cart is most likely not displayed when items are added
       return json_encode(array("success"=>true, "cart"=>$this->renderCart(true), "count"=>$count));
     }
   /**
