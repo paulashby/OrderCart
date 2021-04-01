@@ -384,7 +384,7 @@ class OrderCart extends WireData implements Module {
       return [
         "open" => "<script src='$cart_script_url'></script>
         <div class='cart-items'>",
-        "close" => "</div>"
+        "close" => "</div><!-- End cart-items -->"
       ];
     }
   /**
@@ -412,20 +412,20 @@ class OrderCart extends WireData implements Module {
       $f_sku = $settings["f_sku"];
 
       $cart_items = $this->getCartItems();
-      $render = "<div class='cart-forms'><form class='cart-items__form' action='' method='post'>";
+      $render = "<div class='cart-forms'>
+        <form class='cart-items__form' action='' method='post'>";
       // Track number of images in case $customImageMarkup has a lazy loading threshold
       $eager_count = 0;
       $total = 0;
+      $render_items = "";
 
       // cart_items are line_items NOT product pages
       foreach ($cart_items as $item => $data) {
 
         $sku_ref = $data["{$prfx}_sku_ref"];
-        $sku_uc = strtoupper($sku_ref);
         $product_selector = "template=product, {$f_sku}={$sku_ref}";
         $product = $this->pages->findOne($product_selector);
 
-        $title = $product->title;
         $price = $settings->getPrice($product);
         $quantity = $data["{$prfx}_quantity"];
         $line_item_total = $price * $quantity;
@@ -443,43 +443,44 @@ class OrderCart extends WireData implements Module {
         $token_name = $this->token_name;
         $token_value = $this->token_value;
 
-        $render .= "<fieldset class='form__fieldset'>";
+        $render_items .= "<fieldset class='form__fieldset'>";
 
         $imageMarkupFile = $this["customImageMarkup"];
         if($imageMarkupFile) {
           $eager_count++;
-          $render .= $this->files->render($imageMarkupFile, array("product"=>$product, "img_count"=>$eager_count));
+          $render_items .= $this->files->render($imageMarkupFile, array("product"=>$product, "img_count"=>$eager_count));
         } else {
-          $render .= $this->renderProductShot($product);
+          $render_items .= $this->renderProductShot($product);
         }
         
         $product_title_sku_options = [
           "product"=>$product
         ];
 
-        $render .= "<div class='cart__info'>";
-        $render .= $this->files->render("components/productTitleSku", $product_title_sku_options);
-        $render .= "<label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
-        $render .= $this->renderQuantityField($qty_field_options);
-        $render .= "<p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
+        $render_items .= "<div class='cart__info'>";
+        $render_items .= $this->files->render("components/productTitleSku", $product_title_sku_options);
+        $render_items .= "<label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
+        $render_items .= $this->renderQuantityField($qty_field_options);
+        $render_items .= "<p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
             <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
             <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
-          </div>
           </fieldset>";
       }
-      $total_formatted = $this->renderPrice($total);
-      $render .= "<p class='cart__price'>Total: $total_formatted</p>
-      </form>";
 
       if(count($cart_items)){
-
-        $render .= "<form class='cart-items__form' action='' method='post'>
+        $render .= $render_items;
+        $total_formatted = $this->renderPrice($total);
+        $render .= "<p class='cart__price'>Total: $total_formatted</p>
+        </form><!-- End cart-items__form -->
+        <form class='cart-items__form' action='' method='post'>
           <input type='hidden' id='order_token' name='$token_name' value='$token_value'>
           <input class='form__button form__button--submit' type='submit' name='submit' value='Place Order' data-action='order' data-actionurl='$action_path'>
         </form>
-        </div>";
+        </div><!-- End cart-forms -->";
       } else {
-        $render .= "<h3>There are currently no items in the cart</h3>";
+        $render .= "</form><!-- End cart-items__form -->
+        <h3>There are currently no items in the cart</h3>
+        </div><!-- End cart-forms -->";
       }
       return $render;
     }    
