@@ -318,16 +318,19 @@ class OrderCart extends WireData implements Module {
       $context = $options["context"];
       $sku = $options["sku"];
       $id = $context . $sku;
+      $action_path = $options["action_path"];
 
       if($context === "listing") {
         $name = "quantity";
         $value = "1";
+        $action = "";
       } else {
         $name = "quantity[]";
         $value = $options["quantity"];
+        $action = "update";
       }
 
-      return "<input id='$id' class='.form__quantity' type='number' data-context='$context' data-action='qtychange' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
+      return "<input id='$id' class='.form__quantity' type='number' data-context='$context' data-action='$action' data-actionurl='$action_path' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
     }
   /**
    * Generate HTML markup for product listing form
@@ -346,6 +349,7 @@ class OrderCart extends WireData implements Module {
       $qty_field_options = array(
         "context"=>"listing",  
         "sku"=>$sku,
+        "action_path"=>$action_path
       );
 
       $token_name = $this->token_name;
@@ -411,6 +415,7 @@ class OrderCart extends WireData implements Module {
       $render = "<div class='cart-forms'><form class='cart-items__form' action='' method='post'>";
       // Track number of images in case $customImageMarkup has a lazy loading threshold
       $eager_count = 0;
+      $total = 0;
 
       // cart_items are line_items NOT product pages
       foreach ($cart_items as $item => $data) {
@@ -422,22 +427,23 @@ class OrderCart extends WireData implements Module {
 
         $title = $product->title;
         $price = $settings->getPrice($product);
-        $r_price = $this->renderPrice($price);
         $quantity = $data["{$prfx}_quantity"];
-        $subtotal = $this->renderPrice($price * $quantity);
+        $line_item_total = $price * $quantity;
+        $total += $line_item_total;
+        $price_formatted = $this->renderPrice($price);
+        $lit_formatted = $this->renderPrice($line_item_total);
 
         $qty_field_options = array(
           "context"=>"cart", 
           "sku"=>$sku_ref,
-          "quantity"=>$quantity
+          "quantity"=>$quantity,
+          "action_path"=>$action_path
         );
 
         $token_name = $this->token_name;
         $token_value = $this->token_value;
 
-        //TODO: Set appropriate <h> tag for title
-        $render .= "<h3 class='cart-item__title'>$title</h3>
-        <fieldset class='form__fieldset'>";
+        $render .= "<fieldset class='form__fieldset'>";
 
         $imageMarkupFile = $this["customImageMarkup"];
         if($imageMarkupFile) {
@@ -446,24 +452,30 @@ class OrderCart extends WireData implements Module {
         } else {
           $render .= $this->renderProductShot($product);
         }
+        
+        $product_title_sku_options = [
+          "product"=>$product
+        ];
 
-        $render .= "<p>SKU: {$sku_uc}</p>
-          <label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
-          $render .= $this->renderQuantityField($qty_field_options);
-          $render .= "<p class='form__price'>Pack price: $r_price</p>
-          <p class='form__price--subtotal'>Subtotal: $subtotal</p>
-          <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
-          <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
-          <input type='button' class='form__button form__button--update' value='Update quantity' data-action='update' data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
+        $render .= "<div class='cart__info'>";
+        $render .= $this->files->render("components/productTitleSku", $product_title_sku_options);
+        $render .= "<label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
+        $render .= $this->renderQuantityField($qty_field_options);
+        $render .= "<p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
+            <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
+            <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
+          </div>
           </fieldset>";
       }
-      $render .= "</form>";
+      $total_formatted = $this->renderPrice($total);
+      $render .= "<p class='cart__price'>Total: $total_formatted</p>
+      </form>";
 
       if(count($cart_items)){
 
         $render .= "<form class='cart-items__form' action='' method='post'>
           <input type='hidden' id='order_token' name='$token_name' value='$token_value'>
-          <input class='form__button form__button--submit' type='submit' name='submit' value='submit' data-action='order' data-actionurl='$action_path'>
+          <input class='form__button form__button--submit' type='submit' name='submit' value='Place Order' data-action='order' data-actionurl='$action_path'>
         </form>
         </div>";
       } else {
