@@ -330,7 +330,7 @@ class OrderCart extends WireData implements Module {
         $action = "update";
       }
 
-      return "<input id='$id' class='.form__quantity' type='number' data-context='$context' data-action='$action' data-actionurl='$action_path' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
+      return "<input id='$id' class='form__quantity' type='number' data-context='$context' data-action='$action' data-actionurl='$action_path' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
     }
   /**
    * Generate HTML markup for product listing form
@@ -447,7 +447,7 @@ class OrderCart extends WireData implements Module {
         $token_name = $this->token_name;
         $token_value = $this->token_value;
 
-        $render_items .= "<fieldset class='form__fieldset'>";
+        $render_items .= "<fieldset class='cart__fieldset'>";
 
         $imageMarkupFile = $this["customImageMarkup"];
         if($imageMarkupFile) {
@@ -464,10 +464,11 @@ class OrderCart extends WireData implements Module {
         $render_items .= "<div class='cart__info'>";
         $render_items .= $this->files->render("components/productTitleSku", $product_title_sku_options);
         $render_items .= $this->renderQuantityField($qty_field_options);
-        $render_items .= "<label class='form__label' for='quantity'>$pack_str of 6:</label>";
+        $render_items .= "<label class='form__label form__label--cart-qty' for='quantity'>$pack_str of 6</label>";
         $render_items .= "<p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
             <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
-            <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
+            <input type='button' class='form__link form__link--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
+            </div><!-- End cart__info -->
           </fieldset>";
       }
 
