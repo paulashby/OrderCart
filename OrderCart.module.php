@@ -423,13 +423,17 @@ class OrderCart extends WireData implements Module {
       foreach ($cart_items as $item => $data) {
 
         $sku_ref = $data["{$prfx}_sku_ref"];
+
         $product_selector = "template=product, {$f_sku}={$sku_ref}";
         $product = $this->pages->findOne($product_selector);
 
-        $price = $settings->getPrice($product);
         $quantity = $data["{$prfx}_quantity"];
+        $pack_str = $quantity > 1 ? "Packs" : "Pack";
+
+        $price = $settings->getPrice($product);
         $line_item_total = $price * $quantity;
         $total += $line_item_total;
+
         $price_formatted = $this->renderPrice($price);
         $lit_formatted = $this->renderPrice($line_item_total);
 
@@ -459,8 +463,8 @@ class OrderCart extends WireData implements Module {
 
         $render_items .= "<div class='cart__info'>";
         $render_items .= $this->files->render("components/productTitleSku", $product_title_sku_options);
-        $render_items .= "<label class='form__label' for='quantity'>Quantity (Packs of 6):</label>";
         $render_items .= $this->renderQuantityField($qty_field_options);
+        $render_items .= "<label class='form__label' for='quantity'>$pack_str of 6:</label>";
         $render_items .= "<p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
             <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
             <input type='button' class='form__button form__button--remove' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
