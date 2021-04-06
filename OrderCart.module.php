@@ -321,18 +321,16 @@ class OrderCart extends WireData implements Module {
       $action_path = $options["action_path"];
 
       if($context === "listing") {
-        $class = "form__quantity";
         $name = "quantity";
         $value = "1";
         $action = "";
       } else {
-        $class = "cart__quantity";
         $name = "quantity[]";
         $value = $options["quantity"];
         $action = "update";
       }
 
-      return "<input id='$id' class='$class' type='number' data-context='$context' data-action='$action' data-actionurl='$action_path' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
+      return "<input id='$id' class='form__quantity' type='number' data-context='$context' data-action='$action' data-actionurl='$action_path' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
     }
   /**
    * Generate HTML markup for product listing form
@@ -465,13 +463,13 @@ class OrderCart extends WireData implements Module {
         ];
 
         $render_items .= "<div class='cart__info'>
-        <p class='cart__sku'>$sku_ref</p>
+        <p class='products__sku'>$sku_ref</p>
           <h2 class='cart__item-title'>$product_title</h2>";
         $render_items .= $this->renderQuantityField($qty_field_options);
-        $render_items .= "<label class='cart__quantity-label' for='quantity'>$pack_str of 6</label>
+        $render_items .= "<label class='form__quantity-label' for='quantity'>$pack_str of 6</label>
         <p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
             <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
-            <input type='button' class='cart__link' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
+            <input type='button' class='form__link' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
             </div><!-- End cart__info -->
           </fieldset>";
       }
@@ -479,11 +477,11 @@ class OrderCart extends WireData implements Module {
       if(count($cart_items)){
         $render .= $render_items;
         $total_formatted = $this->renderPrice($total);
-        $render .= "<p class='cart__price'>Total: $total_formatted</p>
+        $render .= "<p class='cart__price cart__price--total'>Total: $total_formatted</p>
         </form><!-- End cart-items__form -->
         <form class='cart-items__form' action='' method='post'>
           <input type='hidden' id='order_token' name='$token_name' value='$token_value'>
-          <input class='form__button form__button--submit' type='submit' name='submit' value='Place Order' data-action='order' data-actionurl='$action_path'>
+          <input class='form__button form__button--submit form__button--cart' type='submit' name='submit' value='Place Order' data-action='order' data-actionurl='$action_path'>
         </form>
         </div><!-- End cart-forms -->";
       } else {
