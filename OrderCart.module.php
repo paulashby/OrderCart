@@ -481,7 +481,7 @@ class OrderCart extends WireData implements Module {
         </form><!-- End cart-items__form -->
         <form class='cart-items__form' action='' method='post'>
           <input type='hidden' id='order_token' name='$token_name' value='$token_value'>
-          <input class='form__button form__button--submit form__button--cart' type='submit' name='submit' value='Place Order' data-action='order' data-actionurl='$action_path'>
+          <input class='form__button form__button--submit form__button--cart' type='submit' name='submit' value='place order' data-action='order' data-actionurl='$action_path'>
         </form>
         </div><!-- End cart-forms -->";
       } else {
