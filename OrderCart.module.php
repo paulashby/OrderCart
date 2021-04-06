@@ -336,39 +336,57 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for product listing form
    *
    * @param Page $product The product item
+   * @param Array $info  - keys are class name suffixes, values are element content
    * @return String HTML markup
    */
-    protected function renderItem($product) {
+    protected function renderItem($product, $info = array()) {
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
 
       $title = $product->title;
       $sku = $product->sku;
-      $price = $settings->getPrice($product);
+      $product_details = $product->price_category;
+      $price = $this->renderPrice($settings->getPrice($product));
+      $size = $product_details->size;
 
-      $qty_field_options = array(
-        "context"=>"listing",  
-        "sku"=>$sku,
-        "action_path"=>$action_path
-      );
-
-      $token_name = $this->token_name;
-      $token_value = $this->token_value;
-      $render = "<form action='' method='post'>
-      <h2>$title</h2>";
+      $render = "<form action='' method='post'>";
       $render .= $this->renderProductShot($product, true);
+      $render .= "<div class='form__item-body'>";
+
+      $item_info = "<div class='form__item-info'>
+      <p class='products__sku'>$sku</p>
+      <h2 class='products__title'>$title</h2>";
+
+      foreach ($info as $class => $value) {
+        $item_info .= "<p class='lightbox__$class lightbox__info-entry'>$value</p>";
+      }
+
+      $item_info .= "</div><!-- End form__item-info -->";
+      // Item info
+      $render .= $item_info;
 
       // Include cart buttons if logged in
       if($this->wire("user")->isLoggedin()) {
 
-        $render .= "<label class='.form__label' for='quantity'>Quantity (Packs of 6):</label>";
-        $render .= $this->renderQuantityField($qty_field_options);
-        $render .= "<input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
-        <input class='form__button form__button--submit' type='submit' name='submit' value='Add to cart' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'>";
-      } else {
-        $render .= "<p>Login to add to order</p>";
-      }
+        $qty_field_options = array(
+          "context"=>"listing",  
+          "sku"=>$sku,
+          "action_path"=>$action_path
+        );
+        $qty_field = $this->renderQuantityField($qty_field_options);
 
+        $token_name = $this->token_name;
+        $token_value = $this->token_value;
+
+        // Item buttons
+        $render .= "<div class='form__item-buttons'>
+        $qty_field
+        <label class='form__quantity-label' for='quantity'>Pack of 6</label>
+        <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
+        <input class='form__button form__button--submit' type='submit' name='submit' value='Add to cart' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'>
+        </div><!-- End form__item-buttons -->";
+      }
+      $render .= "</div><!-- End form__item-body -->";
       $render .= "</form>";
       return $render;
     }
@@ -555,7 +573,7 @@ class OrderCart extends WireData implements Module {
               $product_shot_url = $product_shot->size($size, $size)->url;
               $dsc = $product_shot->description;
               $alt_text = $dsc ? $dsc : $product->title;
-              $product_shot_out .= "<img src='$product_shot_url' alt='$alt_text'>";
+              $product_shot_out .= "<img src='$product_shot_url' class='product-shot' alt='$alt_text'>";
 
               if( ! $listing) {
                 // Only require first image in array for shopping cart
