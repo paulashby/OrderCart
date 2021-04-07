@@ -336,10 +336,11 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for product listing form
    *
    * @param Page $product The product item
-   * @param Array $info  - keys are class name suffixes, values are element content
+   * @param Array $info - keys are class name suffixes, values are element content
    * @return String HTML markup
    */
     protected function renderItem($product, $info = array()) {
+
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
 
@@ -414,91 +415,36 @@ class OrderCart extends WireData implements Module {
 
       $cart_markup = $this->getOuterCartMarkup();
       return $cart_markup["open"] . $cart_markup["close"];
-    }  
-    public function populateCart($customImageMarkup = false) {
+    }
+  /**
+   * Generate HTML markup to populate empty cart
+   *
+   * @param String $customImageMarkup - name of image markup file
+   * @return String HTML markup
+   */
+    public function populateCart($customImageMarkup) {
 
-      if( ! $this["customImageMarkup"] && $customImageMarkup) {
-        $data = $this->modules->getConfig($this->className);
-        $data["customImageMarkup"] = $customImageMarkup;
-        $this->modules->saveConfig($this->className, $data);
-      }
+      $this->setCustomImageMarkup($customImageMarkup);
 
       // Store field and template names in variables for markup
       $settings = $this->modules->get("ProcessOrderPages");
-      $prfx = $settings["prfx"];
       $action_path = $this->pages->get("template=order-actions")->path;
-      $f_sku = $settings["f_sku"];
-
+      
       $cart_items = $this->getCartItems();
       $render = "<div class='cart-forms'>
         <form class='cart-items__form' action='' method='post'>";
       // Track number of images in case $customImageMarkup has a lazy loading threshold
-      $eager_count = 0;
-      $total = 0;
-      $render_items = "";
-
-      // cart_items are line_items NOT product pages
-      foreach ($cart_items as $item => $data) {
-
-        $sku_ref = $data["{$prfx}_sku_ref"];
-
-        $product_selector = "template=product, {$f_sku}={$sku_ref}";
-        $product = $this->pages->findOne($product_selector);
-        $product_title = $product->title;
-
-        $quantity = $data["{$prfx}_quantity"];
-        $pack_str = $quantity > 1 ? "Packs" : "Pack";
-
-        $price = $settings->getPrice($product);
-        $line_item_total = $price * $quantity;
-        $total += $line_item_total;
-
-        $price_formatted = $this->renderPrice($price);
-        $lit_formatted = $this->renderPrice($line_item_total);
-
-        $qty_field_options = array(
-          "context"=>"cart", 
-          "sku"=>$sku_ref,
-          "quantity"=>$quantity,
-          "action_path"=>$action_path
-        );
-
-        $token_name = $this->token_name;
-        $token_value = $this->token_value;
-
-        $render_items .= "<fieldset class='cart__fieldset'>";
-
-        $imageMarkupFile = $this["customImageMarkup"];
-        if($imageMarkupFile) {
-          $eager_count++;
-          $render_items .= $this->files->render($imageMarkupFile, array("product"=>$product, "img_count"=>$eager_count));
-        } else {
-          $render_items .= $this->renderProductShot($product);
-        }
-        
-        $product_title_sku_options = [
-          "product"=>$product
-        ];
-
-        $render_items .= "<div class='cart__info'>
-        <p class='products__sku'>$sku_ref</p>
-          <h2 class='cart__item-title'>$product_title</h2>";
-        $render_items .= $this->renderQuantityField($qty_field_options);
-        $render_items .= "<label class='form__quantity-label' for='quantity'>$pack_str of 6</label>
-        <p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
-            <input type='hidden' id='cart{$sku_ref}_token' name='$token_name' value='$token_value'>
-            <input type='button' class='form__link' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
-            </div><!-- End cart__info -->
-          </fieldset>";
-      }
-
+      
+      $render_data = $this->renderCartItems($cart_items);
+      $markup = $render_data["markup"];
+      
       if(count($cart_items)){
-        $render .= $render_items;
-        $total_formatted = $this->renderPrice($total);
+        $render .= $markup;
+        $total_formatted = $this->renderPrice($render_data["total"]);
         $render .= "<p class='cart__price cart__price--total'>Total: $total_formatted</p>
         </form><!-- End cart-items__form -->
         <form class='cart-items__form' action='' method='post'>
-          <input type='hidden' id='order_token' name='$token_name' value='$token_value'>
+          <input type='hidden' id='order_token' name='" . $render_data["token_name"] . "' value='" . $render_data["token_value"] . "'>
           <input class='form__button form__button--submit form__button--cart' type='submit' name='submit' value='place order' data-action='order' data-actionurl='$action_path'>
         </form>
         </div><!-- End cart-forms -->";
@@ -528,6 +474,95 @@ class OrderCart extends WireData implements Module {
       $render .= $container["close"];
 
       return $render;
+    }   
+  /**
+   * Generate HTML markup for current user's cart items
+   *
+   * @param Page array $cart_items - line_item pages NOT product pages
+   * @return Array ["total"=>int, "token_name"=>String, "token_value"=>String, "markup"=>String]
+   */
+    protected function renderCartItems($cart_items) {
+
+      $settings = $this->modules->get("ProcessOrderPages");
+      $prfx = $settings["prfx"];
+      $action_path = $this->pages->get("template=order-actions")->path;
+      $f_sku = $settings["f_sku"];
+      $total = 0;
+      $eager_count = 0;
+      $render_data = array(
+        "total" => 0,
+        "token_name" => $this->token_name,
+        "token_value" => $this->token_value
+      );
+      $markup = "";
+
+      // cart_items are line_items NOT product pages
+      foreach ($cart_items as $item => $data) {
+
+        $sku_ref = $data["{$prfx}_sku_ref"];
+
+        $product_selector = "template=product, {$f_sku}={$sku_ref}";
+        $product = $this->pages->findOne($product_selector);
+        $product_title = $product->title;
+
+        $quantity = $data["{$prfx}_quantity"];
+        $pack_str = $quantity > 1 ? "Packs" : "Pack";
+
+        $price = $settings->getPrice($product);
+        $line_item_total = $price * $quantity;
+        $total += $line_item_total;
+
+        $price_formatted = $this->renderPrice($price);
+        $lit_formatted = $this->renderPrice($line_item_total);
+
+        $qty_field_options = array(
+          "context"=>"cart", 
+          "sku"=>$sku_ref,
+          "quantity"=>$quantity,
+          "action_path"=>$action_path
+        );
+
+        $markup .= "<fieldset class='cart__fieldset'>";
+
+        $imageMarkupFile = $this["customImageMarkup"];
+        if($imageMarkupFile) {
+          $eager_count++;
+          $markup .= $this->files->render($imageMarkupFile, array("product"=>$product, "img_count"=>$eager_count));
+        } else {
+          $markup .= $this->renderProductShot($product);
+        }
+        
+        $product_title_sku_options = [
+          "product"=>$product
+        ];
+
+        $markup .= "<div class='cart__info'>
+        <p class='products__sku'>$sku_ref</p>
+          <h2 class='cart__item-title'>$product_title</h2>";
+        $markup .= $this->renderQuantityField($qty_field_options);
+        $markup .= "<label class='form__quantity-label' for='quantity'>$pack_str of 6</label>
+        <p class='cart__price'>$lit_formatted <span class='cart__price--unit'>$price_formatted per pack</span></p>
+            <input type='hidden' id='cart{$sku_ref}_token' name='" . $render_data["token_name"] . "' value='" . $render_data["token_value"] . "'>
+            <input type='button' class='form__link' value='Remove' data-action='remove'  data-actionurl='$action_path' data-context='cart' data-sku='{$sku_ref}'>
+            </div><!-- End cart__info -->
+          </fieldset>";
+      }
+      $render_data["markup"] = $markup;
+
+      return $render_data;
+    }
+  /**
+   * Store name of custom image markup file in module config
+   *
+   * @param String $customImageMarkup - name of image markup file
+   */
+    protected function setCustomImageMarkup($customImageMarkup = false){
+
+      if( ! $this["customImageMarkup"] && $customImageMarkup) {
+        $data = $this->modules->getConfig($this->className);
+        $data["customImageMarkup"] = $customImageMarkup;
+        $this->modules->saveConfig($this->className, $data);
+      }
     }
   /**
    * Get size of product shot from config
