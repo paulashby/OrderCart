@@ -336,10 +336,11 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for product listing form
    *
    * @param Page $product The product item
+   * @param String $context
    * @param Array $info - keys are class name suffixes, values are element content
    * @return String HTML markup
    */
-    protected function renderItem($product, $info = array()) {
+    protected function renderItem($product, $context = null, $info = array()) {
 
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
@@ -388,6 +389,12 @@ class OrderCart extends WireData implements Module {
         </div><!-- End form__item-buttons -->";
       }
       $render .= "</div><!-- End form__item-body -->";
+
+      // Use $context param for class names if provided
+      $class_prfx = isset($context) ? $context . "_" : "";
+
+      $render .= "<div class='{$class_prfx}message'><p class='{$class_prfx}message-text'><span class='{$class_prfx}message-content'>Added to cart</span></p></div>";
+
       $render .= "</form>";
       return $render;
     }
