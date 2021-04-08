@@ -7,17 +7,16 @@ var Cart = (function () {
     var setup = {
     	success_callbacks : {
 	        add: function (e, data) {
-	        	//TODO: Provide success feedback - need this for when return is hit after changing quantity
-	        	updateCart('add', data);
+	        	updateCart(e, 'add', data);
 	        },
 	        remove: function (e, data) {
-	        	updateCart('remove', data);
+	        	updateCart(e, 'remove', data);
 	        },
 	        update: function (e, data) {
-	        	updateCart('update', data);
+	        	updateCart(e, 'update', data);
 	        },
 	        order: function (e, data) {
-	        	updateCart('order', data);
+	        	updateCart(e, 'order', data);
 	        }
 	    }
 	};
@@ -99,7 +98,7 @@ var Cart = (function () {
 		};
 		doAction(settings);
 	}
-	function updateCart (action, data) {
+	function updateCart (e, action, data) {
 		var cart_items = $('.cart-items');
 	        	
     	if(action !== 'add' && cart_items && cart_items.length) {
@@ -108,6 +107,7 @@ var Cart = (function () {
 
 		// Dispatch event for interested parties
 		$.event.trigger({
+			initiator: e.target,
 			type: "updateCart",
 			action: action,
 			count: data.count
