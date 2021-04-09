@@ -216,7 +216,7 @@ class OrderCart extends WireData implements Module {
         }
         $order_message = $this->order_message;
 
-        return json_encode(array("success"=>true, "cart"=>"<h3>$order_message</h3>", "count"=>0));  
+        return json_encode(array("success"=>true, "cart"=>"<h3 class='cart__order-mssg'>$order_message</h3>", "count"=>0));  
       }
 
       $errors[] = "The orders page could not be found";
@@ -406,10 +406,12 @@ class OrderCart extends WireData implements Module {
     public function getOuterCartMarkup() {
 
       $cart_script_url = $this->config->urls->site . "modules/OrderCart/ordercart.js";
+      $cart_items = $this->getCartItems();
+      $cart_items_class = count($cart_items) ? "cart-items" : "cart-items cart-items--empty";
 
       return [
         "open" => "<script src='$cart_script_url'></script>
-        <div class='cart-items'>",
+        <div class='$cart_items_class'>",
         "close" => "</div><!-- End cart-items -->"
       ];
     }
@@ -443,7 +445,7 @@ class OrderCart extends WireData implements Module {
         $render .= $this->renderCartItems($cart_items);
       } else {
         $render .= "</form><!-- End cart-items__form -->
-        <h3>There are currently no items in the cart</h3>
+        <h3 class='cart__empty-mssg'>The cart is empty</h3>
         </div><!-- End cart-forms -->";
       }
       return $render;

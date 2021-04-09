@@ -100,9 +100,18 @@ var Cart = (function () {
 	}
 	function updateCart (e, action, data) {
 		var cart_items = $('.cart-items');
-	        	
-    	if(action !== 'add' && cart_items && cart_items.length) {
+
+		if(action !== 'add' && cart_items && cart_items.length) {
     		cart_items.html(data.cart);
+    	}
+
+    	// Reset classes
+    	cart_items.removeClass();
+
+    	if(data.count > 0){
+    		cart_items.addClass("cart-items");
+    	} else {
+    		cart_items.addClass("cart-items cart-items--empty");
     	}
 
 		// Dispatch event for interested parties
