@@ -408,7 +408,6 @@ class OrderCart extends WireData implements Module {
       $cart_script_url = $this->config->urls->site . "modules/OrderCart/ordercart.js";
       $cart_items = $this->getCartItems();
       $cart_items_class = count($cart_items) ? "cart-items" : "cart-items cart-items--empty";
-
       return [
         "open" => "<script src='$cart_script_url'></script>
         <div class='$cart_items_class'>",
@@ -474,7 +473,7 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for current user's cart items
    *
    * @param Page array $cart_items - line_item pages NOT product pages
-   * @return Array ["total"=>int, "token_name"=>String, "token_value"=>String, "markup"=>String, "action_path"=>String]
+   * @return String HTML markup
    */
     protected function renderCartItems($cart_items) {
 
