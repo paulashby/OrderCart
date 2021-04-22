@@ -428,7 +428,7 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup to populate empty cart
    *
    * @param String $customImageMarkup - name of image markup file
-   * @return String HTML markup
+   * @return Array [Int count, String markup]
    */
     public function populateCart($customImageMarkup) {
 
@@ -436,18 +436,19 @@ class OrderCart extends WireData implements Module {
 
       $settings = $this->modules->get("ProcessOrderPages");
       $cart_items = $this->getCartItems();
+      $item_count = count($cart_items);
 
       $render = "<div class='cart-forms'>
       <form class='cart-items__form' action='' method='post'>";
 
-      if(count($cart_items)){
+      if($item_count){
         $render .= $this->renderCartItems($cart_items);
-      } else {
-        $render .= "</form><!-- End cart-items__form -->
+        return array("count" => $item_count, "markup" => $render);
+      }
+      $render .= "</form><!-- End cart-items__form -->
         <h3 class='cart__empty-mssg'>The cart is empty</h3>
         </div><!-- End cart-forms -->";
-      }
-      return $render;
+        return array("count" => 0, "markup" => $render);  
     }    
   /**
    * Generate HTML markup for current user's cart
@@ -464,7 +465,7 @@ class OrderCart extends WireData implements Module {
         $container = $this->getOuterCartMarkup();
       }
       $render = $container["open"];
-      $render .= $this->populateCart($customImageMarkup);
+      $render .=  $this->populateCart($customImageMarkup)["markup"];
       $render .= $container["close"];
 
       return $render;
