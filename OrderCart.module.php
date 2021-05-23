@@ -418,11 +418,12 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for empty cart to be populated by AJAX call
    *
    * @return String HTML markup
+   * @param String $spinner - placeholder to display while content is loading
    */
-    public function renderEmptyCart() {
+    public function renderEmptyCart($spinner = "") {
 
       $cart_markup = $this->getOuterCartMarkup();
-      return $cart_markup["open"] . $cart_markup["close"];
+      return $cart_markup["open"] . $spinner . $cart_markup["close"];
     }
   /**
    * Generate HTML markup to populate empty cart
