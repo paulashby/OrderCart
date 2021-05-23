@@ -101,7 +101,7 @@ class OrderCart extends WireData implements Module {
         $cart_item->delete(true);
         $count = $this->getNumCartItems();
 
-        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true), "count"=>$count));  
+        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true, false, true), "count"=>$count));  
       }
       return json_encode(array("error"=>"The item could not be found"));
     }
@@ -428,9 +428,10 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup to populate empty cart
    *
    * @param String $customImageMarkup - name of image markup file
+   * @param Boolean $eager - for cases where we don't want lazy loading images
    * @return Array [Int count, String markup]
    */
-    public function populateCart($customImageMarkup) {
+    public function populateCart($customImageMarkup, $eager = false) {
 
       $this->setCustomImageMarkup($customImageMarkup);
 
@@ -442,7 +443,7 @@ class OrderCart extends WireData implements Module {
       <form class='cart-items__form' action='' method='post'>";
 
       if($item_count){
-        $render .= $this->renderCartItems($cart_items);
+        $render .= $this->renderCartItems($cart_items, $eager);
         return array("count" => $item_count, "markup" => $render);
       }
       $render .= "</form><!-- End cart-items__form -->
@@ -455,9 +456,10 @@ class OrderCart extends WireData implements Module {
    *
    * @param Boolean $omitContainer - true if outer div not required (useful to avoid losing click handler)
    * @param Boolean false or Function $customImageMarkup
+   * @param Boolean $eager - for cases where we don't lazy loading images
    * @return String HTML markup
    */
-  public function renderCart($omitContainer = false, $customImageMarkup = false) {
+  public function renderCart($omitContainer = false, $customImageMarkup = false, $eager = false) {
 
       if($omitContainer) {
         $container = ["open" => "", "close" => ""];
@@ -465,7 +467,7 @@ class OrderCart extends WireData implements Module {
         $container = $this->getOuterCartMarkup();
       }
       $render = $container["open"];
-      $render .=  $this->populateCart($customImageMarkup)["markup"];
+      $render .=  $this->populateCart($customImageMarkup, $eager)["markup"];
       $render .= $container["close"];
 
       return $render;
@@ -474,9 +476,10 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for current user's cart items
    *
    * @param Page array $cart_items - line_item pages NOT product pages
+   * @param Boolean $eager - for cases where we don't lazy loading images
    * @return String HTML markup
    */
-    protected function renderCartItems($cart_items) {
+    protected function renderCartItems($cart_items, $eager) {
 
       $settings = $this->modules->get("ProcessOrderPages");
       $prfx = $settings["prfx"];
@@ -508,7 +511,7 @@ class OrderCart extends WireData implements Module {
         $imageMarkupFile = $this["customImageMarkup"];
         if($imageMarkupFile) {
           $eager_count++;
-          $markup .= $this->files->render($imageMarkupFile, array("product"=>$product, "img_count"=>$eager_count));
+          $markup .= $this->files->render($imageMarkupFile, array("product"=>$product, "img_count"=>$eager_count, "eager"=>$eager));
         } else {
           $markup .= $this->renderProductShot($product);
         }
