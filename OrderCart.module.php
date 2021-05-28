@@ -81,8 +81,8 @@ class OrderCart extends WireData implements Module {
 
         $count = $this->getNumCartItems();
 
-        // Return entire form to cart
-        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true), "count"=>$count));
+        // Return entire form to cart with eager loading images.
+        return json_encode(array("success"=>true, "cart"=>$this->renderCart(true, false, true), "count"=>$count));
       }
 
       return json_encode(array("error"=>"The item could not be found"));
