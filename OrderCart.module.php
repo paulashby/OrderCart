@@ -354,10 +354,18 @@ class OrderCart extends WireData implements Module {
       $render = "<form action='' method='post'>";
 
       $imageMarkupFile = $this["customImageMarkup"];
+
+      // $count is the number of images we want to load from the image array - in most cases 1. 2 for lightbox
+      $count = $context == "lightbox" ? 2 : 1;
+
       if($imageMarkupFile) {
-        $render .= $this->files->render($imageMarkupFile, array("product"=>$product, "class"=>"product-shot", "img_count"=>0, "eager"=>true));
+        $additional_class = "";
+        for ($i=0; $i < $count; $i++) { 
+          $render .= $this->files->render($imageMarkupFile, array("product"=>$product, "class"=>"product-shot{$additional_class}", "img_count"=>0, "eager"=>true, "img_index"=>$i));
+          $additional_class = " product-shot--extra";
+        }
       } else {
-        $render .= $this->renderProductShot($product, true);
+        $render .= $this->renderProductShot($product, $count);
       }
 
       $render .= "<div class='form__item-body'>";
@@ -637,44 +645,41 @@ class OrderCart extends WireData implements Module {
    * Generate HTML markup for product shot
    *
    * @param Page $product
+   * @param Int $count
    * @return String HTML markup
    */
-    public function renderProductShot($product, $listing = false) {
+    public function renderProductShot($product, $count = 1) {
 
       $product_shot_field = $this["f_product_img"];
-      $size = $this->getProductShotSize($listing);
+      $size = $this->getProductShotSize($count != 1); // Everywhere except lightbox
       $product_shot_out = "";
 
       // Are product shots expected?
-      if($product_shot_field){
-
-        // Does product template have the image field?
-        if($product[$product_shot_field]) {
-
-          // Is image field populated?
-          if(count($product[$product_shot_field])){
-
-            $product_shot_out = "";
-
-            foreach($product[$product_shot_field] as $product_shot) {
-
-              $product_shot_url = $product_shot->size($size, $size)->url;
-              $dsc = $product_shot->description;
-              $alt_text = $dsc ? $dsc : $product->title;
-              $product_shot_out .= "<img src='$product_shot_url' class='product-shot' alt='$alt_text'>";
-
-              if( ! $listing) {
-                // Only require first image in array for shopping cart
-                break;
-              }
-            }
-          } else {
-            wire("log")->save("errors", "OrderCart module: product shot unavailable for $title");
-          }
-        } else {
-          wire("log")->save("errors", "OrderCart module: product shot field does not exist");
-        }
+      if( ! $product_shot_field){
+        return wire("log")->save("errors", "OrderCart module: product shot field name not set in module config");
       }
+      // Does product template have the image field?
+      if( ! $product[$product_shot_field]) {
+        return wire("log")->save("errors", "OrderCart module: product shot field does not exist");
+      }
+      // Is image field populated?
+      $available = count($product[$product_shot_field]);
+      if( ! $available){
+        return wire("log")->save("errors", "OrderCart module: product shot unavailable for $title");
+      }
+
+      $product_shot_out = "";
+      $additional_class = "";
+
+      for ($i=0; $i < $count && $i < $available; $i++) { 
+        $product_shot = $product[$product_shot_field]->eq($i);
+        $product_shot_url = $product_shot->size($size, $size)->url;
+        $dsc = $product_shot->description;
+        $alt_text = $dsc ? $dsc : $product->title;
+        $product_shot_out .= "<img src='$product_shot_url' class='product-shot{$additional_class}' alt='$alt_text'>";
+        $additional_class = " product-shot--extra";
+      }
+
       return $product_shot_out;
     }
 }
