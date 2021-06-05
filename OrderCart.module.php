@@ -351,7 +351,7 @@ class OrderCart extends WireData implements Module {
       $price = $this->renderPrice($settings->getPrice($product));
       $size = $product_details->size;
 
-      $render = "<form action='' method='post'>";
+      $render = "<form class='item__form' action='' method='post'>";
 
       $imageMarkupFile = $this["customImageMarkup"];
 
