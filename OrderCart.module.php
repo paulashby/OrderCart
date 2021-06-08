@@ -355,13 +355,17 @@ class OrderCart extends WireData implements Module {
 
       $imageMarkupFile = $this["customImageMarkup"];
 
-      // $count is the number of images we want to load from the image array - in most cases 1. 2 for lightbox
-      $count = $context == "lightbox" ? 2 : 1;
+      // $count is the number of images we want to load from the image array
+      if($context == "lightbox" && $product->product_shot->count > 1) {
+        $count = 2;
+      } else {
+        $count = 1;
+      }
 
       if($imageMarkupFile) {
         $additional_class = "";
         for ($i=0; $i < $count; $i++) { 
-          $render .= $this->files->render($imageMarkupFile, array("product"=>$product, "class"=>"product-shot{$additional_class}", "img_count"=>0, "eager"=>true, "img_index"=>$i));
+          $render .= $this->files->render($imageMarkupFile, array("product"=>$product, "class"=>"product-shot{$additional_class}", "img_count"=>0, "eager"=>true, "img_index"=>$i, "context"=>$context));
           $additional_class = " product-shot--extra";
         }
       } else {
