@@ -400,10 +400,17 @@ class OrderCart extends WireData implements Module {
         $token_value = $this->token_value;
 
         // Item buttons
-        $render .= "<div class='form__item-buttons'>
-        $qty_field
-        <label class='form__quantity-label' for='quantity'>Pack of 6</label>
-        <input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
+        $render .= "<div class='form__item-buttons'>";
+        $render .= $qty_field;
+
+        $pack_quantity = $product_details->paper->quantity_per_unit;
+        if($pack_quantity > 0){
+          $render .= "<label class='form__quantity-label' for='quantity'>x pack of $pack_quantity</label>";
+        } else {
+          $render .= "<label class='form__quantity-label' for='quantity'>Packs</label>";
+        }
+        
+        $render .= "<input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
         <input class='form__button form__button--submit' type='submit' name='submit' value='Add to cart' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'>
         </div><!-- End form__item-buttons -->";
       }
