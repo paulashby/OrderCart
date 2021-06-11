@@ -1,20 +1,28 @@
 <?php namespace ProcessWire;
 
 $config = array(
+	"companyID" => array(
+		"name"=> "company",
+		"type" => "text", 
+		"label" => "Your Company Name",
+		"description" => "This will be used in confirmation messages.", 
+		"value" => "", 
+		"required" => true 
+	),
+	"notificatioSender" => array(
+		"name"=> "mailfrom",
+		"type" => "text", 
+		"label" => "Email address to appear in 'from' field",
+		"description" => "This will be used in confirmation messages.", 
+		"value" => "", 
+		"required" => true 
+	),
 	"outputCurrencySign" => array(
 		"name"=> "o_csign",
 		"type" => "text", 
 		"label" => "Currency sign",
 		"description" => "This will be prepended to all your prices.", 
 		"value" => "£", 
-		"required" => true 
-	),
-	"orderNumber" => array(
-		"name"=> "order_message",
-		"type" => "text", 
-		"label" => "Placed order message",
-		"description" => "Message to show when customer successfully places an order", 
-		"value" => "Thank you for your order - you will receive a confirmation email shorty.", 
 		"required" => true 
 	),
 	"productImgField" => array(
