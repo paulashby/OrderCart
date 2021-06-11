@@ -221,7 +221,7 @@ class OrderCart extends WireData implements Module {
         $company_name = $this->company;
         $subject = "Your $company_name Order";
         $u_name = $u->name;
-        $body = "Hi $u_name,\nThanks for placing an order with $company_name.\nWe'll send a confirmation email as soon as your items are dispatched.";
+        $body = "Hi $u_name,\nThanks for placing an order with $company_name. To save on waste, we use a print-on-demand system, so please allow five to ten days for your order to arrive. In the meantime, we'll email you an invoice (new customers pro forma, existing customers usual 30 day terms).";
 
         $notification_status = $this->sendNotificationEmail($to, $subject, $body);
 
@@ -255,17 +255,17 @@ class OrderCart extends WireData implements Module {
         $order_pg->parent = $next_step;
         $order_pg->save();
 
-        if($order_step == "completed") {
-          // Send confirmation email
-          $customer_details = $this->users->get($customer);
-          $to = $customer_details->email;
-          $company_name = $this->company;
-          $subject = "Your $company_name Order";
-          $u_name = $customer_details->name;
-          $body = "Hi $u_name,\nYour $company_name order (number $order_num) has just been dispatched and should be with you in the next few days.";
+        // if($order_step == "completed") {
+        //   // Send confirmation email
+        //   $customer_details = $this->users->get($customer);
+        //   $to = $customer_details->email;
+        //   $company_name = $this->company;
+        //   $subject = "Your $company_name Order";
+        //   $u_name = $customer_details->name;
+        //   $body = "Hi $u_name,\nYour $company_name order (number $order_num) is now in progress.";
 
-          $notification_status = $this->sendNotificationEmail($to, $subject, $body);
-        }
+        //   $notification_status = $this->sendNotificationEmail($to, $subject, $body);
+        // }
         return true;
       }
       return false;
