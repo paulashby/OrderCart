@@ -181,7 +181,8 @@ class OrderCart extends WireData implements Module {
       // Get the parent page for the new order
       $errors = array();
 
-      $orders_parent = $this->getOrdersPage("pending", $this->users->getCurrentUser()->id);
+      $u = $this->users->getCurrentUser();
+      $orders_parent = $this->getOrdersPage("pending", $u->id);
 
       if($orders_parent->id) {
         
@@ -214,9 +215,19 @@ class OrderCart extends WireData implements Module {
           $item->parent = $order_page;
           $item->save();
         }
-        $order_message = $this->order_message;
 
-        return json_encode(array("success"=>true, "cart"=>"<h3 class='cart__order-mssg'>$order_message</h3>", "count"=>0));  
+        // Send confirmation email
+        $to = $u->email;
+        $company_name = $this->company;
+        $subject = "Your $company_name Order";
+        $u_name = $u->name;
+        $body = "Hi $u_name,\nThanks for placing an order with $company_name.\nWe'll send a confirmation email as soon as your items are dispatched.";
+
+        $notification_status = $this->sendNotificationEmail($to, $subject, $body);
+
+        $heads_up = "Thank you for your order - you will receive a confirmation email shorty.";
+
+        return json_encode(array("success"=>true, "cart"=>"<h3 class='cart__order-mssg'>$heads_up</h3>", "count"=>0));  
       }
 
       $errors[] = "The orders page could not be found";
@@ -243,6 +254,18 @@ class OrderCart extends WireData implements Module {
         $order_pg->of(false);
         $order_pg->parent = $next_step;
         $order_pg->save();
+
+        if($order_step == "completed") {
+          // Send confirmation email
+          $customer_details = $this->users->get($customer);
+          $to = $customer_details->email;
+          $company_name = $this->company;
+          $subject = "Your $company_name Order";
+          $u_name = $customer_details->name;
+          $body = "Hi $u_name,\nYour $company_name order (number $order_num) has just been dispatched and should be with you in the next few days.";
+
+          $notification_status = $this->sendNotificationEmail($to, $subject, $body);
+        }
         return true;
       }
       return false;
@@ -692,5 +715,29 @@ class OrderCart extends WireData implements Module {
       }
 
       return $product_shot_out;
+    }
+
+    /**
+     * Get parent page for order - for current user only if id supplied
+     *
+     * @param String $to
+     * @param String $subject
+     * @param String $body
+     * @return String status message
+     */
+    protected function sendNotificationEmail($to, $subject, $body) {
+
+      $from = $this->mailfrom;
+
+      if($this->modules->isInstalled("ProcessContactPages")) {
+
+        $pcp = $this->modules->get("ProcessContactPages");
+        $message_array = explode("\n", $body);
+        $pcp->sendHTMLmail($to, $subject, $message_array);
+        return "HTML email sent to $to";
+
+      } 
+      $this->mail->send($to, $from, $subject, $body);
+      return "Unformatted email sent to $to";
     }
 }
