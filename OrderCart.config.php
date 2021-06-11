@@ -9,7 +9,7 @@ $config = array(
 		"value" => "", 
 		"required" => true 
 	),
-	"notificatioSender" => array(
+	"notificationSender" => array(
 		"name"=> "mailfrom",
 		"type" => "text", 
 		"label" => "Email address to appear in 'from' field",
