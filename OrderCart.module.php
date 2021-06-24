@@ -174,9 +174,10 @@ class OrderCart extends WireData implements Module {
   /**
    * Process line items, creating new order in /processwire/orders/pending-orders/
    *
+   * @param Int $ecopack - provide product in sustainable packaging
    * @return Json
    */
-    public function placeOrder() {
+    public function placeOrder($ecopack = false) {
 
       // Get the parent page for the new order
       $errors = array();
@@ -212,6 +213,7 @@ class OrderCart extends WireData implements Module {
           // Store price at time of purchase so unaffected by subsequent price changes
           $price = $pop->getPrice($product);
           $item["{$prfx}_purchase_price"] = $price;
+          $item["{$prfx}_ecopack"] = (int) $ecopack;
           $item->parent = $order_page;
           $item->save();
         }
@@ -225,7 +227,7 @@ class OrderCart extends WireData implements Module {
 
         $notification_status = $this->sendNotificationEmail($to, $subject, $body);
 
-        $heads_up = "Thank you for your order - you will receive a confirmation email shorty.";
+        $heads_up = "Thank you for your order - you will receive a confirmation email shortly.";
 
         return json_encode(array("success"=>true, "cart"=>"<h3 class='cart__order-mssg'>$heads_up</h3>", "count"=>0));  
       }
@@ -643,6 +645,10 @@ class OrderCart extends WireData implements Module {
         <form class='cart-items__form' action='' method='post'>
           <input type='hidden' id='order_token' name='" . $render_data["token_name"] . "' value='" . $render_data["token_value"] . "'>
           <input class='form__button form__button--submit form__button--cart' type='submit' name='submit' value='place order' data-action='order' data-actionurl='" . $render_data["action_path"] . "'>
+          <div class='form__eco'>
+            <input type='checkbox' id='cartsustainable' class='form__eco-checkbox' name='sustainable' value='sustainable' checked>
+              <label for='cartsustainable' class='form__label form__note form__note--eco'>Use sustainable packaging</label>
+          </div>
         </form>
         </div><!-- End cart-forms -->";
     }

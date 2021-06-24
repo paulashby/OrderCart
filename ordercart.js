@@ -79,6 +79,9 @@ var Cart = (function () {
 	    	var settings = {
 				e: e,
 				action: 'order',
+				params: {
+					ecopack: document.querySelectorAll('#cartsustainable')[0].checked
+				},
 				token: {
 					name: token.name,
 					value: token.value
@@ -108,7 +111,9 @@ var Cart = (function () {
     	// Reset classes
     	cart_items.removeClass();
 
-    	if(data.count > 0){
+    	if(action === 'order'){
+    		cart_items.addClass("cart-items cart-items--confirm");
+    	} else if(data.count > 0){
     		cart_items.addClass("cart-items");
     	} else {
     		cart_items.addClass("cart-items cart-items--empty");
