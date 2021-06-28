@@ -380,13 +380,17 @@ class OrderCart extends WireData implements Module {
 
       $imageMarkupFile = $this["customImageMarkup"];
 
-      // $count is the number of images we want to load from the image array
-      if($context == "lightbox" && $product->product_shot->count > 1) {
-        $count = 2;
-      } else {
-        $count = 1;
+      if($context == "lightbox") {
+        //TODO: This should be treated as a custom markup file in the same way as 'customImageMarkup'
+        $templates_path = wire("config")->paths->templates;
+        $render .= wire("files")->render($templates_path . 'components/buttons/flipButton', ['button_class'=>'flip__button', 'action'=>'flip', 'button_type'=>'flip', 'button_text'=>'']);
+        // $count is the number of images we want to load from the image array
+        if ($product->product_shot->count > 1) {
+          $count = 2;
+        } else {
+          $count = 1;
+        }
       }
-
       if($imageMarkupFile) {
         $additional_class = "";
         for ($i=0; $i < $count; $i++) { 
@@ -644,7 +648,7 @@ class OrderCart extends WireData implements Module {
         </form><!-- End cart-items__form -->
         <form class='cart-items__form' action='' method='post'>
           <input type='hidden' id='order_token' name='" . $render_data["token_name"] . "' value='" . $render_data["token_value"] . "'>
-          <input class='form__button form__button--submit form__button--cart' type='submit' name='submit' value='place order' data-action='order' data-actionurl='" . $render_data["action_path"] . "'>
+          <input class='form__button form__button--submit form__button--cart' type='submit' name='submit' value='order' data-action='order' data-actionurl='" . $render_data["action_path"] . "'>
           <div class='form__eco'>
             <input type='checkbox' id='cartsustainable' class='form__eco-checkbox' name='sustainable' value='sustainable' checked>
               <label for='cartsustainable' class='form__label form__note form__note--eco'>Use sustainable packaging</label>
