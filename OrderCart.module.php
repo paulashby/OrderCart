@@ -383,10 +383,10 @@ class OrderCart extends WireData implements Module {
       if($context == "lightbox") {
         //TODO: This should be treated as a custom markup file in the same way as 'customImageMarkup'
         $templates_path = wire("config")->paths->templates;
-        $render .= wire("files")->render($templates_path . 'components/buttons/flipButton', ['button_class'=>'flip__button', 'action'=>'flip', 'button_type'=>'flip', 'button_text'=>'']);
         // $count is the number of images we want to load from the image array
         if ($product->product_shot->count > 1) {
           $count = 2;
+          $render .= wire("files")->render($templates_path . 'components/buttons/flipButton', ['button_class'=>'flip__button', 'action'=>'flip', 'button_type'=>'flip', 'button_text'=>'']);
         } else {
           $count = 1;
         }
