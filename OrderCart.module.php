@@ -622,7 +622,12 @@ class OrderCart extends WireData implements Module {
           <h2 class='cart__item-title'>" . $spec["product_title"] . "</h2>";
 
       $markup .= $this->renderQuantityField($spec);
-      $item_qty_str = $spec["item_str"] . " of " . $spec["qty_str"];
+      $item_qty_str = $spec["item_str"];
+
+      if(array_key_exists("qty_str", $spec)){
+        $item_qty_str .= " of " . $spec["qty_str"];
+      }
+      
       $markup .= "<label class='form__quantity-label' for='quantity'>x $item_qty_str</label>
         <p class='cart__price'>" . $spec["lit_formatted"] . " <span class='cart__price--unit'>" . $spec["price_formatted"] . " per " . $spec["item_str"] . "</span></p>
             <input type='hidden' id='cart" . $spec["sku"] . "_token' name='" . $spec["token_name"] . "' value='" . $spec["token_value"] . "'>
