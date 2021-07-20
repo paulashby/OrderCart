@@ -209,9 +209,10 @@ class OrderCart extends WireData implements Module {
           $sku = $item["{$prfx}_sku_ref"];
           $product_selector = "template=product, $f_sku=$sku";
           $product = $this->pages->findOne($product_selector);
+          $quantity_per_unit = $product->price_category->paper->quantity_per_unit;
           $item->of(false);
           // Store price at time of purchase so unaffected by subsequent price changes
-          $price = $pop->getPrice($product);
+          $price = $pop->getPrice($product) * $quantity_per_unit;
           $item["{$prfx}_purchase_price"] = $price;
           $item["{$prfx}_ecopack"] = (int) $ecopack;
           $item->parent = $order_page;
@@ -338,16 +339,17 @@ class OrderCart extends WireData implements Module {
  * @param Array $options [String "context", String "sku"]
  * @return String HTML markup
  */
-    protected function renderQuantityField($options) {
-
+    protected function ___renderQuantityField($options) {
       $context = $options["context"];
       $sku = $options["sku"];
       $id = $context . $sku;
       $action_path = $options["action_path"];
+      $min = array_key_exists("min", $options) ? $options["min"] : 1;
+      $step = array_key_exists("step", $options) ? $options["step"] : 1;
 
       if($context === "listing") {
         $name = "quantity";
-        $value = "1";
+        $value = $min;
         $action = "";
       } else {
         $name = "quantity[]";
@@ -355,7 +357,7 @@ class OrderCart extends WireData implements Module {
         $action = "update";
       }
 
-      return "<input id='$id' class='form__quantity' type='number' data-context='$context' data-action='$action' data-actionurl='$action_path' data-sku='$sku' name='$name' min='1' step='1' value='$value'>";
+      return "<input id='$id' class='form__quantity' type='number' data-context='$context' data-action='$action' data-actionurl='$action_path' data-sku='$sku' name='$name' min='$min' step='$step' value='$value'>";
     }
   /**
    * Generate HTML markup for product listing form
@@ -363,9 +365,10 @@ class OrderCart extends WireData implements Module {
    * @param Page $product The product item
    * @param String $context
    * @param Array $info - keys are class name suffixes, values are element content
+   * @param Array $qty_settings - String quantity_str name of pack eg wallet, Int min, Int step
    * @return String HTML markup
    */
-    protected function renderItem($product, $context = null, $info = array()) {
+  protected function renderItem($product, $context = null, $info = array(), $qty_settings = null) {
 
       $settings = $this->modules->get("ProcessOrderPages");
       $action_path = $this->pages->get("template=order-actions")->path;
@@ -423,6 +426,17 @@ class OrderCart extends WireData implements Module {
           "sku"=>$sku,
           "action_path"=>$action_path
         );
+
+        if($qty_settings) {
+          // Add the extra quantity settings to the $qty_field_options array
+          $qty_field_options = array_merge($qty_field_options, $qty_settings);
+          $quantity_str = "x " . $qty_settings["quantity_str"];
+        } else {
+          $pack_quantity = $product_details->paper->quantity_per_unit;
+          // $quantity_str = $pack_quantity ? "x packs of $pack_quantity" : "Packs"; 
+          $quantity_str = "x pack of $pack_quantity"; 
+        }
+
         $qty_field = $this->renderQuantityField($qty_field_options);
 
         $token_name = $this->token_name;
@@ -431,13 +445,7 @@ class OrderCart extends WireData implements Module {
         // Item buttons
         $render .= "<div class='form__item-buttons'>";
         $render .= $qty_field;
-
-        $pack_quantity = $product_details->paper->quantity_per_unit;
-        if($pack_quantity > 0){
-          $render .= "<label class='form__quantity-label' for='quantity'>x pack of $pack_quantity</label>";
-        } else {
-          $render .= "<label class='form__quantity-label' for='quantity'>Packs</label>";
-        }
+        $render .= "<label class='form__quantity-label' for='quantity'>$quantity_str</label>";
         
         $render .= "<input type='hidden' id='listing{$sku}_token' name='$token_name' value='$token_value'>
         <input class='form__button form__button--submit' type='submit' name='submit' value='Add to cart' data-context='listing' data-sku='$sku' data-action='add' data-actionurl='$action_path'>
@@ -555,9 +563,10 @@ class OrderCart extends WireData implements Module {
         $sku_ref = $data["{$prfx}_sku_ref"];
         $product_selector = "template=product, {$f_sku}={$sku_ref}";
         $product = $this->pages->get($product_selector);
+        $quantity_per_unit = $product->price_category->paper->quantity_per_unit;
 
         $quantity = $data["{$prfx}_quantity"];
-        $price = $settings->getPrice($product);
+        $price = $settings->getPrice($product) * $quantity_per_unit;
         $line_item_total = $price * $quantity;
 
         // Track number of images in case $customImageMarkup has a lazy loading threshold
@@ -572,9 +581,11 @@ class OrderCart extends WireData implements Module {
           $markup .= $this->renderProductShot($product);
         }
         
-        $render_data["sku_ref"] = $sku_ref;
+        $render_data["sku"] = $sku_ref;
         $render_data["quantity"] = $quantity;
-        $render_data["pack_str"] = $quantity > 1 ? "Packs" : "Pack";
+        // $render_data["item_str"] = $quantity > 1 ? "Packs" : "Pack";
+        $render_data["item_str"] ="pack";
+        $render_data["qty_str"] = "6";
         $render_data["product_title"] = $product->title;
         $render_data["lit_formatted"] = $this->renderPrice($line_item_total);
         $render_data["price_formatted"] = $this->renderPrice($price);
@@ -604,26 +615,18 @@ class OrderCart extends WireData implements Module {
    * ]
    * @return  String HTML markup
    */
-    protected function renderCartItem($spec) {
-
-      $qty_field_options = array(
-        "context"=>"cart", 
-        "sku"=>$spec["sku_ref"],
-        "quantity"=>$spec["quantity"],
-        "action_path"=>$spec["action_path"]
-      );
-      $renderQuantityField = $this->renderQuantityField($qty_field_options);
+    protected function ___renderCartItem($spec) {
 
       $markup =  "<div class='cart__info'>
-        <p class='products__sku'>" . $spec["sku_ref"] . "</p>
+        <p class='products__sku'>" . $spec["sku"] . "</p>
           <h2 class='cart__item-title'>" . $spec["product_title"] . "</h2>";
-      
-      $markup .= $renderQuantityField;
 
-      $markup .= "<label class='form__quantity-label' for='quantity'>" . $spec["pack_str"] . " of 6</label>
-        <p class='cart__price'>" . $spec["lit_formatted"] . " <span class='cart__price--unit'>" . $spec["price_formatted"] . " per pack</span></p>
-            <input type='hidden' id='cart" . $spec["sku_ref"] . "_token' name='" . $spec["token_name"] . "' value='" . $spec["token_value"] . "'>
-            <input type='button' class='form__link' value='Remove' data-action='remove'  data-actionurl='" . $spec["action_path"] . "' data-context='cart' data-sku='" . $spec["sku_ref"] . "'>
+      $markup .= $this->renderQuantityField($spec);
+      $item_qty_str = $spec["item_str"] . " of " . $spec["qty_str"];
+      $markup .= "<label class='form__quantity-label' for='quantity'>x $item_qty_str</label>
+        <p class='cart__price'>" . $spec["lit_formatted"] . " <span class='cart__price--unit'>" . $spec["price_formatted"] . " per " . $spec["item_str"] . "</span></p>
+            <input type='hidden' id='cart" . $spec["sku"] . "_token' name='" . $spec["token_name"] . "' value='" . $spec["token_value"] . "'>
+            <input type='button' class='form__link' value='Remove' data-action='remove'  data-actionurl='" . $spec["action_path"] . "' data-context='cart' data-sku='" . $spec["sku"] . "'>
             </div><!-- End cart__info -->
           </fieldset>";
 
