@@ -224,7 +224,7 @@ class OrderCart extends WireData implements Module {
         $company_name = $this->company;
         $subject = "Your $company_name Order";
         $u_name = $u->name;
-        $body = "Hi $u_name,\nThanks for placing an order with $company_name. To save on waste, we use a print-on-demand system, so please allow five to ten days for your order to arrive. In the meantime, we'll email you an invoice (new customers pro forma, existing customers usual 30 day terms).";
+        $body = "Hi $u_name,\nThanks for placing an order with $company_name. To save on waste, we use a print-on-demand system, so please allow eight working days for your order to arrive. In the meantime, we'll email you an invoice (new customers pro forma, existing customers usual 30 day terms).";
 
         $notification_status = $this->sendNotificationEmail($to, $subject, $body);
 
