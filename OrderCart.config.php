@@ -48,5 +48,13 @@ $config = array(
 		"description" => "Please enter a size in pixels", 
 		"value" => "", 
 		"required" => false 
+	),
+	"shippingInfo" => array(
+		"name"=> "f_shipping_info",
+		"type" => "text", 
+		"label" => "Shipping info to appear at bottom of cart",
+		"description" => "If you want to include concise shipping information in your cart, please enter a single short line of text", 
+		"value" => "", 
+		"required" => false 
 	)
 );

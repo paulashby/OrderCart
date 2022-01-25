@@ -471,6 +471,7 @@ class OrderCart extends WireData implements Module {
       $cart_script_url = $this->config->urls->site . "modules/OrderCart/ordercart.js";
       $cart_items = $this->getCartItems();
       $cart_items_class = count($cart_items) ? "cart-items" : "cart-items cart-items--empty";
+
       return [
         "open" => "<script src='$cart_script_url'></script>
         <div class='$cart_items_class'>",
@@ -651,6 +652,8 @@ class OrderCart extends WireData implements Module {
     protected function renderCartButtons($render_data) {
 
         $total_formatted = $this->renderPrice($render_data["total"]);
+        $shipping_info = $this["f_shipping_info"];
+        $shipping_message = strlen($shipping_info) ? "<p class='form__shipping'>$shipping_info</p>" : "";
 
         return "<p class='cart__price cart__price--total'>Total: $total_formatted</p>
         </form><!-- End cart-items__form -->
@@ -660,8 +663,9 @@ class OrderCart extends WireData implements Module {
           <div class='form__eco'>
             <input type='checkbox' id='cartsustainable' class='form__eco-checkbox' name='sustainable' value='sustainable' checked>
               <label for='cartsustainable' class='form__label form__note form__note--eco'>Use sustainable packaging</label>
+              $shipping_message
           </div>
-        </form>
+          </form>
         </div><!-- End cart-forms -->";
     }
   /**
