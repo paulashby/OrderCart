@@ -4,23 +4,7 @@ var Cart = (function () {
 
     'use strict';
 
-    var setup = {
-    	success_callbacks : {
-	        add: function (e, data) {
-	        	updateCart(e, 'add', data);
-	        },
-	        remove: function (e, data) {
-	        	updateCart(e, 'remove', data);
-	        },
-	        update: function (e, data) {
-	        	updateCart(e, 'update', data);
-	        },
-	        order: function (e, data) {
-	        	updateCart(e, 'order', data);
-	        }
-	    }
-	};
-	var actions = {
+    var actions = {
 	};
 
 	// https://www.sitepoint.com/jquery-document-ready-plain-javascript/
@@ -32,12 +16,11 @@ var Cart = (function () {
 	  document.addEventListener("DOMContentLoaded", onDOMloaded);
 	}
 
-
 	function onDOMloaded () {
 
 		// Use event handlers in actions object
 
-	    document.addEventListener('click', function (e) { 
+	    document.addEventListener('click', function (e) {
 	    	dataAttrEventHandler(e, actions); 
 	    }, false);
 	    document.addEventListener('change', function (e) { 
@@ -46,10 +29,17 @@ var Cart = (function () {
 
 	    actions.add = function (e) {
 
+	    	var event_src = document.getElementById(getId(e));
 	    	var params = {
 				sku: e.target.dataset.sku,
-    			qty: document.getElementById(getId(e)).value
+    			qty: event_src.value
     		};
+    		var step = event_src.step;
+
+    		if(parseInt(params.qty, 10) % parseInt(step, 10) !== 0) {
+    			// Not permitted as quantity must be increment of step value
+    			return;	
+    		}
 
 	    	changeQuantity (e, 'add', params);
 	    }
@@ -167,8 +157,8 @@ var Cart = (function () {
 		    		//TODO: Does this need handling?
 		    		console.warn('Ajax call returned an error');
 		    	} else {
-		    		// Route to appropriate callback
-		    		setup.success_callbacks[options.role](options.event, response);
+		    		// eg (event, 'update', response)
+		    		updateCart(options.event, options.role, response);
 		    	}
 		    }
 		};
