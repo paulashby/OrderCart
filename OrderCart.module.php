@@ -179,10 +179,8 @@ class OrderCart extends WireData implements Module {
    */
     public function placeOrder($ecopack = false) {
 
-      // Get the parent page for the new order
-      $errors = array();
-
       $u = $this->users->getCurrentUser();
+      // Get the parent page for the new order
       $orders_parent = $this->getOrdersPage("pending", $u->id);
 
       if($orders_parent->id) {
@@ -210,7 +208,27 @@ class OrderCart extends WireData implements Module {
           $product_selector = "template=product, $f_sku=$sku";
           $product = $this->pages->findOne($product_selector);
           $quantity_per_unit = $product->price_category->paper->quantity_per_unit;
-          $item->of(false);
+          $unit_increment = $product->price_category->paper->unit_increment;
+
+          // Cancel the order if quantity is not a multiple of $unit_increment
+          if( $unit_increment && $item["{$prfx}_quantity"] % $unit_increment !== 0) {
+
+            // Reinstate any processed items
+            $cart = $this->pages->get($this->getCartPath());
+            $to_reinstate = $order_page->children();
+
+            foreach ($to_reinstate as $line_item) {
+              // Move this order's processed items back to cart as we're cancelling and alerting customer to the problem
+              $line_item->of(false);
+              $line_item->parent = $cart;
+              $line_item->save();
+            }
+            $this->pages->delete($order_page, true);
+            $sku_uc = strtoupper($sku);
+            return json_encode(array("error"=>"$sku_uc sells in units of $unit_increment"));
+          }
+         
+         $item->of(false);
           // Store price at time of purchase so unaffected by subsequent price changes
           $price = $pop->getPrice($product) * $quantity_per_unit;
           $item["{$prfx}_purchase_price"] = $price;
@@ -233,8 +251,7 @@ class OrderCart extends WireData implements Module {
         return json_encode(array("success"=>true, "cart"=>"<h3 class='cart__order-mssg'>$heads_up</h3>", "count"=>0));  
       }
 
-      $errors[] = "The orders page could not be found";
-      return json_encode(array("errors"=>$errors));
+      return json_encode(array("error"=>"The orders page could not be found"));
     }
   /**
    * Move order to next step to reflect new status

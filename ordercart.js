@@ -21,6 +21,7 @@ var Cart = (function () {
 		// Use event handlers in actions object
 
 	    document.addEventListener('click', function (e) {
+	    	$('#cart__form__error').removeClass('cart__error--show');
 	    	dataAttrEventHandler(e, actions); 
 	    }, false);
 	    document.addEventListener('change', function (e) { 
@@ -154,8 +155,9 @@ var Cart = (function () {
 		    	var response = JSON.parse(this.response);
 
 		    	if(response.error) {
-		    		//TODO: Does this need handling?
-		    		console.warn('Ajax call returned an error');
+		    		var cart_items = $('.cart-items');
+		    		$('.cart-forms').append('<p id="cart__form__error">' + response.error + '</p>');
+		    		$('#cart__form__error').addClass('cart__error--show');
 		    	} else {
 		    		// eg (event, 'update', response)
 		    		updateCart(options.event, options.role, response);
