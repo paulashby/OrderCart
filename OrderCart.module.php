@@ -346,7 +346,7 @@ class OrderCart extends WireData implements Module {
    * @param Integer $pence
    * @return String GBP value as a string with decimal point and prepended £
    */
-    public function renderPrice($pence) {
+    public function ___renderPrice($pence) {
 
       return $this["o_csign"] . number_format($pence/100, 2);
     }
@@ -393,8 +393,6 @@ class OrderCart extends WireData implements Module {
       $title = $product->title;
       $sku = $product->sku;
       $product_details = $product->price_category;
-      $price = $this->renderPrice($settings->getPrice($product));
-      $size = $product_details->size;
 
       $render = "<form class='item__form' action='' method='post'>";
 
