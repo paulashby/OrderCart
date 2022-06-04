@@ -599,7 +599,6 @@ class OrderCart extends WireData implements Module {
         
         $render_data["sku"] = $sku_ref;
         $render_data["quantity"] = $quantity;
-        // $render_data["item_str"] = $quantity > 1 ? "Packs" : "Pack";
         $render_data["item_str"] ="pack";
         $render_data["qty_str"] = "6";
         $render_data["product_title"] = $product->title;
