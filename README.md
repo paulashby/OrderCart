@@ -8,7 +8,7 @@
 
 ## Description
 
-Order cart module for the [Processwire](https://processwire.com) Content Management System. Allows registered users to add items to a cart for processing by the [ProcessOrderPages](https://github.com/paulashby/ProcessOrderPages) module.
+Order cart module for the [Processwire](https://processwire.com) Content Management System. Allows registered users to add products to a shopping cart. Although OrderCart can be used as a stand-alone module, it works best alongside the [ProcessOrderPages](https://github.com/paulashby/ProcessOrderPages) module. The customer registration process should require that customers provide payment details since the module does not provide payment methods.
 
 ## Installation
 
