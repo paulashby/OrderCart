@@ -121,7 +121,7 @@ Parameters:
 Returns:<br />
 String - the formatted price<br /><br />
 
-### renderEmptyCart```<br />
+### renderEmptyCart<br />
 *Get HTML markup for empty cart*<br />
 
 ```$cart->renderEmptyCart("<div class='spinner'></div>");```<br />
