@@ -12,11 +12,9 @@ Order cart module for the [Processwire](https://processwire.com) Content Managem
 
 ## Installation
 
-Firstly, download and install the latest version of [Processwire](https://processwire.com). Download the following modules ProcessOrderPages folder and place in your /site/modules directory:<br />
-- [OrderCart](https://github.com/paulashby/OrderCart)
-- [PageMaker](https://github.com/paulashby/PageMaker)
-- [ProcessOrderPages](https://github.com/paulashby/ProcessOrderPages)
-<br />
+Firstly, download and install the latest version of [Processwire](https://processwire.com), then download the OrderCart folder and place in your /site/modules directory.<br />
+
+Log into your site as an admin and go the Modules page. Select the Site tab and click the Install button on the OrderCart module entry.
 
 On the module settings page, you should configure the following:
 - **Company Name** - this will be used in confirmation emails sent to customers
